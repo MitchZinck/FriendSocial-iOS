@@ -6,12 +6,19 @@
 //
 
 import SwiftUI
+extension Font {
+    static func poppins(_ size: CGFloat, weight: Font.Weight = .regular) -> Font {
+        return Font.custom("Poppins-\(weight)", size: size)
+    }
+}
 
+// Apply the font to the entire app
 @main
-struct FriendSocial_IOSApp: App {
+struct FriendSocialApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .font(.poppins(16)) // Set default font size to 16
         }
     }
 }

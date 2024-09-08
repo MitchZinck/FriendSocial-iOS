@@ -90,3 +90,8 @@ Packages
 
 # macOS files
 .DS_Store
+
+.vscode/
+
+Assets.xcassets/
+Fonts/

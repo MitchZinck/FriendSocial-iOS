@@ -7,6 +7,7 @@ struct Activity: Identifiable, Codable {
     let estimatedTime: String
     let locationID: Int
     let userCreated: Bool
+    let emoji: String
     
     enum CodingKeys: String, CodingKey {
         case id
@@ -15,5 +16,6 @@ struct Activity: Identifiable, Codable {
         case estimatedTime = "estimated_time"
         case locationID = "location_id"
         case userCreated = "user_created"
+        case emoji
     }
 }

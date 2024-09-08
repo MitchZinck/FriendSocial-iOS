@@ -7,6 +7,7 @@ class ActivitiesViewModel: ObservableObject {
     @Published var locations: [Location] = []
     @Published var activityParticipants: [Int: [ActivityParticipant]] = [:]
     @Published var participantUsers: [Int: User] = [:]
+    @Published var hasNotifications: Bool = false
     
     private let apiService: APIService
     
@@ -49,7 +50,7 @@ class ActivitiesViewModel: ObservableObject {
             DispatchQueue.main.async {
                 self.user = user
                 self.activityParticipants = Dictionary(grouping: activityParticipants, by: { $0.scheduledActivityID })
-                self.userScheduledActivities = fetchedScheduledActivities
+                self.userScheduledActivities = fetchedScheduledActivities.sorted { $0.scheduledAt < $1.scheduledAt }
                 self.activities = fetchedActivities
                 self.locations = fetchedLocations
                 self.participantUsers = fetchedParticipantUsers
