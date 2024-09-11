@@ -1,39 +1,113 @@
 import SwiftUI
-
 struct HomeView: View {
-    @StateObject private var viewModel = ActivitiesViewModel()
+    @StateObject private var dataManager: DataManager = DataManager.shared
     @State private var userId: Int = 3 // For now, we'll set it to 3
+    @State private var isActivitiesViewActive: Bool = false
+    @State private var isFreeTimeScheduleViewActive: Bool = false
+    @State private var lastDataLoadTime: Date?
     
     var body: some View {
-        NavigationView {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    headerSection
-                    quickAccessButtons
-                    upcomingActivitySection
-                    whosFreeSection
-                    suggestionsSection
+        NavigationStack {
+            ZStack {
+                Group {
+                    if dataManager.isLoading {
+                        ProgressView("Loading...")
+                    } else {
+                        ScrollView {
+                            VStack(alignment: .leading, spacing: 20) {
+                                headerSection
+                            }
+                            .padding(.horizontal)
+                            VStack(alignment: .leading, spacing: 0) {
+                                quickAccessButtons
+                            }
+                            VStack(alignment: .leading, spacing: 20) {
+                                upcomingActivitySection
+                                whosFreeSection
+                                suggestionsSection
+                            }
+                            .padding(.horizontal)
+                        }
+                    }
                 }
-                .padding(.horizontal)
+                .onAppear {
+                    loadDataIfNeeded()
+                }
             }
-            .onAppear {
-                viewModel.fetchAllData(for: userId)
+            .navigationDestination(isPresented: $isActivitiesViewActive) {
+                ActivitiesView()
+            }
+            .navigationDestination(isPresented: $isFreeTimeScheduleViewActive) {
+                FreeTimeScheduleView()
             }
         }
     }
     
+    private func loadDataIfNeeded() {  
+        let fiveMinutes: TimeInterval = 5 * 60
+        if lastDataLoadTime == nil || Date().timeIntervalSince(lastDataLoadTime!) > fiveMinutes {
+            DispatchQueue.main.async {
+                dataManager.loadInitialData(for: userId)
+            }
+            lastDataLoadTime = Date()
+        }
+    }
+
+    // Header section with profile picture and dropdown menu
     private var headerSection: some View {
         HStack {
             VStack(alignment: .leading, spacing: 5) {
-                Text("Hey, \(viewModel.user?.name ?? "there")!")
+                Text("Hey, \(dataManager.currentUser?.name ?? "there")!")
                     .font(.custom("Poppins-Bold", size: 24))
                 Text("What are you up to today?")
                     .font(.custom("Poppins-Regular", size: 16))
                     .foregroundColor(.gray)
             }
             Spacer()
-            notificationButton
-            ProfilePictureView(user: viewModel.user)
+            HStack(spacing: 10) {
+                notificationButton
+                
+                // Profile picture with dropdown menu
+                Menu {
+                    Button(action: {
+                        isActivitiesViewActive = true
+                    }) {
+                        Label("Activities", systemImage: "figure.run")
+                    }
+                    Button(action: {
+                        isFreeTimeScheduleViewActive = true
+                    }) {
+                        Label("Calendar", systemImage: "calendar")
+                    }
+                    Button(action: {}) {
+                        Label("Settings", systemImage: "gear")
+                    }
+                    Button(action: {}) {
+                        Label("Log Out", systemImage: "arrow.right.square")
+                    }
+                    .foregroundColor(.red)
+                } label: {
+                    Image(dataManager.currentUser?.profilePicture ?? "default_profile")
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 50, height: 50)
+                        .clipShape(Circle())
+                        .overlay(Circle().stroke(Color.blue, lineWidth: 2))
+                }
+                .menuStyle(BorderlessButtonMenuStyle())
+            }
+        }
+    }
+
+    // Helper function to determine the destination view
+    private func destinationView(for item: String) -> some View {
+        switch item {
+        case "Activities":
+            return AnyView(ActivitiesView())
+        case "Free Time":
+            return AnyView(FreeTimeScheduleView())
+        default:
+            return AnyView(EmptyView())
         }
     }
     
@@ -46,15 +120,12 @@ struct HomeView: View {
                     .font(.system(size: 18))
                     .foregroundColor(.black)
                 
-                if viewModel.hasNotifications {
-                    Circle()
-                        .fill(Color.red)
-                        .frame(width: 6, height: 6)
-                        .offset(x: 1, y: -1)
-                }
+                Circle()
+                    .fill(Color.red)
+                    .frame(width: 6, height: 6)
+                    .offset(x: 1, y: -1)
             }
         }
-        .padding(.trailing, 10)
     }
     
     private var quickAccessButtons: some View {
@@ -65,24 +136,27 @@ struct HomeView: View {
                 }
             }
             .padding(.vertical)
-            .padding(.leading, 4)
+            .padding(.leading, 15)
         }
     }
     
     private var upcomingActivitySection: some View {
         Group {
-            if let firstActivity = viewModel.userScheduledActivities.first,
-               let activity = viewModel.activities.first(where: { $0.id == firstActivity.activityID }) {
+            if let firstUpcomingActivity: ScheduledActivity = dataManager.scheduledActivities
+                .filter({ $0.scheduledAt >= Date() })
+                .sorted(by: { $0.scheduledAt < $1.scheduledAt })
+                .first,
+               let activity: Activity = dataManager.activities.first(where: { $0.id == firstUpcomingActivity.activityID }) {
                 VStack(alignment: .leading, spacing: 10) {
                     upcomingActivityHeader
                     ActivityCard(
                         activity: activity,
-                        scheduledActivity: firstActivity,
-                        location: viewModel.getLocation(for: activity.locationID),
-                        participants: viewModel.activityParticipants[activity.id] ?? [],
-                        participantUsers: viewModel.participantUsers,
-                        onCancel: viewModel.cancelActivity,
-                        onReschedule: viewModel.rescheduleActivity
+                        scheduledActivity: firstUpcomingActivity,
+                        location: dataManager.locations.first(where: { $0.id == activity.locationID }),
+                        participants: dataManager.getActivityParticipants(for: firstUpcomingActivity.id),
+                        participantUsers: dataManager.participantUsers,
+                        onCancel: { _ in /* Implement cancel logic */ },
+                        onReschedule: { _ in /* Implement reschedule logic */ }
                     )
                 }
             } else {
@@ -108,13 +182,14 @@ struct HomeView: View {
     }
     
     private var whosFreeSection: some View {
-        VStack(alignment: .leading) {
+        VStack(alignment: .leading, spacing: 0) {
             Text("Who's free")
-                .font(.custom("Poppins-Bold", size: 18))
+                .font(.custom("Poppins-Medium", size: 18))
+                .padding(.bottom, 10)
             
-            HStack {
-                ForEach(["profile3", "profile2", "profile1"], id: \.self) { profileName in
-                    Image(profileName)
+            HStack(spacing: 10) {
+                ForEach(dataManager.friends.prefix(3)) { friend in
+                    Image(friend.profilePicture ?? "")
                         .resizable()
                         .scaledToFill()
                         .frame(width: 40, height: 40)
@@ -137,7 +212,7 @@ struct HomeView: View {
                 .fill(Color.gray.opacity(0.1))
                 .frame(width: 25, height: 25)
             
-            Text("+1")
+            Text("+\(max(dataManager.friends.count - 3, 0))")
                 .font(.custom("Poppins-Regular", size: 12))
                 .foregroundColor(.gray)
         }
@@ -166,9 +241,9 @@ struct HomeView: View {
     private var suggestionsSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Suggestions for you")
-                .font(.custom("Poppins-Bold", size: 18))
+                .font(.custom("Poppins-Medium", size: 18))
             
-            let suggestions = [
+            let suggestions: [(String, String)] = [
                 ("Outdoors", "🌳"), ("Party", "🎉"), ("Sports", "⚽️"),
                 ("Music", "🎵"), ("Crafts", "🎨"), ("Indoors", "🏠")
             ]
@@ -182,34 +257,12 @@ struct HomeView: View {
     }
 }
 
-struct ProfilePictureView: View {
-    let user: User?
-    
-    var body: some View {
-        if let profilePictureName = user?.profilePicture {
-            Image(profilePictureName)
-                .resizable()
-                .aspectRatio(contentMode: .fill)
-                .frame(width: 60, height: 60)
-                .clipShape(Circle())
-        } else {
-            Circle()
-                .fill(Color.gray.opacity(0.2))
-                .frame(width: 60, height: 60)
-                .overlay(
-                    Text(user?.name.prefix(1).uppercased() ?? "")
-                        .font(.custom("Poppins-Bold", size: 24))
-                        .foregroundColor(.gray)
-                )
-        }
-    }
-}
-
 struct AnimatedTextView: View {
     let texts: [String]
-    @State private var currentIndex = 0
+    @State private var currentIndex: Int = 0
     @State private var opacity: Double = 1
     @State private var scale: CGFloat = 1
+    @State private var timer: Timer?
     
     var body: some View {
         HStack(spacing: 4) {
@@ -232,12 +285,20 @@ struct AnimatedTextView: View {
         .onAppear {
             startAnimation()
         }
+        .onDisappear {
+            stopAnimation()
+        }
     }
     
     private func startAnimation() {
-        Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { _ in
+        timer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { _ in
             updateAnimationState()
         }
+    }
+    
+    private func stopAnimation() {
+        timer?.invalidate()
+        timer = nil
     }
     
     private func updateAnimationState() {

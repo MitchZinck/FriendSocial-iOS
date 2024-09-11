@@ -10,35 +10,19 @@ struct ActivityCard: View {
     let onReschedule: (ScheduledActivity) -> Void
 
     private var timeSpan: String {
-        let formatter = DateFormatter()
+        let formatter: DateFormatter = DateFormatter()
         formatter.timeStyle = .short
-        let start = formatter.string(from: scheduledActivity.scheduledAt)
-        let estimatedTimeInterval = TimeInterval(activity.estimatedTime) ?? 0
-        let end = formatter.string(from: scheduledActivity.scheduledAt.addingTimeInterval(estimatedTimeInterval))
-        printFonts()
+        let start: String = formatter.string(from: scheduledActivity.scheduledAt)
+        
+        let estimatedTimeComponents: [String] = activity.estimatedTime.components(separatedBy: ":")
+        let hours: Double = Double(estimatedTimeComponents[0]) ?? 0
+        let minutes: Double = Double(estimatedTimeComponents[1]) ?? 0
+        let seconds: Double = Double(estimatedTimeComponents[2]) ?? 0
+        
+        let estimatedTimeInterval: TimeInterval = (hours * 3600) + (minutes * 60) + seconds
+        
+        let end: String = formatter.string(from: scheduledActivity.scheduledAt.addingTimeInterval(estimatedTimeInterval))
         return "\(start) - \(end)"
-    }
-
-    private func printFonts() {
-        for family in UIFont.familyNames {
-            print("Font family: \(family)")
-            for name in UIFont.fontNames(forFamilyName: family) {
-                print("Font name: \(name)")
-            }
-        }
-    }
-
-    func unicodeToEmoji(_ unicodeString: String) -> String? {
-        // Remove the "U+" prefix and parse the hex value
-        let hexString = unicodeString.replacingOccurrences(of: "U+", with: "")
-        
-        // Convert the hex string to an integer
-        if let codePoint = UInt32(hexString, radix: 16), let scalar = Unicode.Scalar(codePoint) {
-            // Create a string from the Unicode scalar
-            return String(scalar)
-        }
-        
-        return nil
     }
     
     var body: some View {
@@ -54,7 +38,7 @@ struct ActivityCard: View {
                         TimeView(timeSpan: timeSpan)
                         LocationView(location: location)
                     }
-                    ParticipantsView(participantUsers: participantUsers)
+                    ParticipantsView(participants: participants, participantUsers: participantUsers)
                 }
                 Spacer()
                 VStack {
@@ -89,7 +73,7 @@ struct LocationView: View {
     let location: Location?
     var body: some View {
         Group {
-            if let location = location {
+            if let location: Location = location {
                 Button(action: openMaps) {
                     HStack {
                         Text(location.name)
@@ -109,49 +93,48 @@ struct LocationView: View {
     }
     
     private func openMaps() {
-        guard let location = location else { return }
-        let coordinates = "\(location.latitude),\(location.longitude)"
-        let googleMapsURL = URL(string: "comgooglemaps://?q=\(coordinates)")
-        let appleMapsURL = URL(string: "http://maps.apple.com/?ll=\(coordinates)")
+        guard let location: Location = location else { return }
+        let coordinates: String = "\(location.latitude),\(location.longitude)"
+        let googleMapsURL: URL? = URL(string: "comgooglemaps://?q=\(coordinates)")
+        let appleMapsURL: URL? = URL(string: "http://maps.apple.com/?ll=\(coordinates)")
         
-        if let url = googleMapsURL, UIApplication.shared.canOpenURL(url) {
+        if let url: URL = googleMapsURL, UIApplication.shared.canOpenURL(url) {
             UIApplication.shared.open(url)
-        } else if let url = appleMapsURL, UIApplication.shared.canOpenURL(url) {
+        } else if let url: URL = appleMapsURL, UIApplication.shared.canOpenURL(url) {
             UIApplication.shared.open(url)
         }
     }
 }
 
-struct ParticipantsView: View {
+private struct ParticipantsView: View {
+    let participants: [ActivityParticipant]
     let participantUsers: [Int: User]
     
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 10) {
-                ForEach(sortedParticipants.prefix(3), id: \.id) { user in
-                    ParticipantView(user: user)
+                ForEach(participants.prefix(3), id: \.id) { participant in
+                    if let user: User = participantUsers[participant.userID] {
+                        ParticipantView(user: user)
+                    }
                 }
                 
-                if sortedParticipants.count > 3 {
-                    AdditionalParticipantsView(count: sortedParticipants.count - 3)
+                if participants.count > 3 {
+                    AdditionalParticipantsView(count: participants.count - 3)
                 }
                 
                 InviteParticipantView()
             }
         }
     }
-    
-    private var sortedParticipants: [User] {
-        participantUsers.values.sorted { $0.id == 3 ? true : $1.id == 3 ? false : $0.id < $1.id }
-    }
 }
 
-struct ParticipantView: View {
+private struct ParticipantView: View {
     let user: User
     
     var body: some View {
         ZStack {
-            if let profilePicture = user.profilePicture {
+            if let profilePicture: String = user.profilePicture {
                 Image(profilePicture)
                     .resizable()
                     .scaledToFill()
@@ -201,7 +184,7 @@ struct ActionButton: View {
                     }
                 )
                 .clipShape(Circle())
-                .overlay(Circle().stroke(Color.gray.opacity(0.5), lineWidth: 0.5)) // Updated this line
+                .overlay(Circle().stroke(Color.gray.opacity(0.5), lineWidth: 0.5))
         }
     }
 }
@@ -230,7 +213,7 @@ struct InviteParticipantView: View {
                         LinearGradient(gradient: Gradient(colors: [Color.white, Color.yellow].map { $0.opacity(0.2) }), startPoint: .top, endPoint: .bottom)
                     )
                     .frame(width: 40, height: 40)
-                    .overlay(Circle().stroke(Color.gray.opacity(0.5), lineWidth: 0.5)) // Updated this line
+                    .overlay(Circle().stroke(Color.gray.opacity(0.5), lineWidth: 0.5))
                 
                 Text("+")
                     .font(.custom("Poppins-Regular", size: 20))
@@ -241,6 +224,5 @@ struct InviteParticipantView: View {
     
     private func inviteParticipant() {
         // Empty logic function for inviting a participant
-        // You can implement the invitation logic here in the future
     }
 }
