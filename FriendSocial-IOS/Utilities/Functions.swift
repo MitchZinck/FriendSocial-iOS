@@ -16,3 +16,8 @@ func unicodeToEmoji(_ unicodeString: String) -> String? {
     
     return nil
 }
+
+func emojiToUnicode(_ emoji: String) -> String? {
+    let scalar: Unicode.Scalar = Unicode.Scalar(emoji.unicodeScalars.first!.value) ?? Unicode.Scalar(0)
+    return "U+\(String(scalar.value, radix: 16))"
+}

@@ -36,7 +36,13 @@ struct ActivityCard: View {
                     }
                     VStack(alignment: .leading) {
                         TimeView(timeSpan: timeSpan)
-                        LocationView(location: location)
+                        if let location = location {
+                            LocationView(location: location)
+                        } else {
+                            Text("No location specified")
+                                .font(.custom("Poppins-Regular", size: 16))
+                                .foregroundColor(.gray)
+                        }
                     }
                     ParticipantsView(participants: participants, participantUsers: participantUsers)
                 }
@@ -70,37 +76,28 @@ struct TimeView: View {
     }
 }
 struct LocationView: View {
-    let location: Location?
+    let location: Location
     var body: some View {
-        Group {
-            if let location: Location = location {
-                Button(action: openMaps) {
-                    HStack {
-                        Text(location.name)
-                            .font(.custom("Poppins-Regular", size: 16))
-                            .foregroundColor(.gray)
-                        Image(systemName: "map")
-                            .foregroundColor(.blue)
-                            .font(.system(size: 16))
-                    }
-                }
-            } else {
-                Text("Unknown")
+        Button(action: openMaps) {
+            HStack {
+                Text(location.name)
                     .font(.custom("Poppins-Regular", size: 16))
                     .foregroundColor(.gray)
+                Image(systemName: "map")
+                    .foregroundColor(.blue)
+                    .font(.system(size: 16))
             }
         }
     }
     
     private func openMaps() {
-        guard let location: Location = location else { return }
-        let coordinates: String = "\(location.latitude),\(location.longitude)"
-        let googleMapsURL: URL? = URL(string: "comgooglemaps://?q=\(coordinates)")
-        let appleMapsURL: URL? = URL(string: "http://maps.apple.com/?ll=\(coordinates)")
+        let coordinates = "\(String(describing: location.latitude)),\(String(describing: location.longitude))"
+        let googleMapsURL = URL(string: "comgooglemaps://?q=\(coordinates)")
+        let appleMapsURL = URL(string: "http://maps.apple.com/?ll=\(coordinates)")
         
-        if let url: URL = googleMapsURL, UIApplication.shared.canOpenURL(url) {
+        if let url = googleMapsURL, UIApplication.shared.canOpenURL(url) {
             UIApplication.shared.open(url)
-        } else if let url: URL = appleMapsURL, UIApplication.shared.canOpenURL(url) {
+        } else if let url = appleMapsURL, UIApplication.shared.canOpenURL(url) {
             UIApplication.shared.open(url)
         }
     }
@@ -109,28 +106,38 @@ struct LocationView: View {
 private struct ParticipantsView: View {
     let participants: [ActivityParticipant]
     let participantUsers: [Int: User]
+    @State private var showAllParticipants: Bool = false
     
     var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
+        VStack {
             HStack(spacing: 10) {
-                ForEach(participants.prefix(3), id: \.id) { participant in
-                    if let user: User = participantUsers[participant.userID] {
-                        ParticipantView(user: user)
+                Button(action: {
+                    showAllParticipants = true
+                }) {
+                    // Sort participants by invite status, with Accepted at the top, then Pending, then Rejected
+                    let sortedParticipants = participants.sorted { $0.inviteStatus < $1.inviteStatus }
+                    ForEach(sortedParticipants.prefix(3), id: \.id) { participant in
+                        if let user = participantUsers[participant.userID] {
+                            ParticipantView(user: user, inviteStatus: participant.inviteStatus)
+                        }
+                    }
+                    
+                    if participants.count > 3 {
+                        AdditionalParticipantsView(count: participants.count - 3)
                     }
                 }
-                
-                if participants.count > 3 {
-                    AdditionalParticipantsView(count: participants.count - 3)
-                }
-                
                 InviteParticipantView()
             }
+        }
+        .sheet(isPresented: $showAllParticipants) {
+            AllParticipantsView(participants: participants, participantUsers: participantUsers)
         }
     }
 }
 
 private struct ParticipantView: View {
     let user: User
+    let inviteStatus: String
     
     var body: some View {
         ZStack {
@@ -140,15 +147,67 @@ private struct ParticipantView: View {
                     .scaledToFill()
                     .frame(width: 40, height: 40)
                     .clipShape(Circle())
+                    .overlay(
+                        Circle()
+                            .stroke(statusColor(for: inviteStatus), lineWidth: 2)
+                    )
+                    .padding(.vertical, 5)
             } else {
                 Circle()
                     .fill(Color.gray.opacity(0.2))
                     .frame(width: 40, height: 40)
+                    .overlay(
+                        Circle()
+                            .stroke(statusColor(for: inviteStatus), lineWidth: 2)
+                    )
                 
                 Text(String(user.name.prefix(1)))
                     .font(.custom("Poppins-Bold", size: 16))
                     .foregroundColor(.gray)
             }
+            
+            statusIcon
+                .offset(x: 15, y: -15)
+        }
+    }
+    
+    private var statusIcon: some View {
+        ZStack {
+            Circle()
+                .fill(Color.white)
+                .frame(width: 16, height: 16)
+            
+            Image(systemName: statusImageName)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 12, height: 12)
+                .foregroundColor(statusColor(for: inviteStatus))
+        }
+    }
+    
+    private var statusImageName: String {
+        switch inviteStatus.lowercased() {
+        case "accepted":
+            return "checkmark"
+        case "pending":
+            return "questionmark"
+        case "rejected":
+            return "xmark"
+        default:
+            return ""
+        }
+    }
+    
+    private func statusColor(for status: String) -> Color {
+        switch status.lowercased() {
+        case "accepted":
+            return .green
+        case "pending":
+            return .yellow
+        case "rejected":
+            return .red
+        default:
+            return .clear
         }
     }
 }
@@ -163,6 +222,7 @@ struct ActionButtonsView: View {
             ActionButton(action: { onReschedule(scheduledActivity) }, imageName: "pencil", gradientColors: [.white, .yellow])
             ActionButton(action: { onCancel(scheduledActivity) }, imageName: "xmark", gradientColors: [.white, .red])
         }
+        .padding(.vertical, 5)
     }
 }
 
@@ -204,6 +264,37 @@ struct AdditionalParticipantsView: View {
         }
     }
 }
+
+struct AllParticipantsView: View {
+    let participants: [ActivityParticipant]
+    let participantUsers: [Int: User]
+    @Environment(\.dismiss) private var dismiss
+    
+    var body: some View {
+        NavigationView {
+            List {
+                ForEach(participants.sorted { $0.inviteStatus < $1.inviteStatus }, id: \.id) { participant in
+                    if let user = participantUsers[participant.userID] {
+                        HStack {
+                            ParticipantView(user: user, inviteStatus: participant.inviteStatus)
+                            Text(user.name)
+                                .font(.custom("Poppins-Regular", size: 16))
+                            Spacer()
+                            Text(participant.inviteStatus)
+                                .font(.custom("Poppins-Regular", size: 14))
+                                .foregroundColor(.gray)
+                        }
+                    }
+                }
+            }
+            .navigationTitle("All Participants")
+            .navigationBarItems(trailing: Button("Done") {
+                dismiss()
+            })
+        }
+    }
+}
+
 struct InviteParticipantView: View {
     var body: some View {
         Button(action: inviteParticipant) {

@@ -1,6 +1,6 @@
 import SwiftUI
 struct HomeView: View {
-    @StateObject private var dataManager: DataManager = DataManager.shared
+    @EnvironmentObject var dataManager: DataManager
     @State private var userId: Int = 3 // For now, we'll set it to 3
     @State private var isActivitiesViewActive: Bool = false
     @State private var isFreeTimeScheduleViewActive: Bool = false

@@ -1,11 +1,11 @@
 import Foundation
 
 struct Activity: Identifiable, Codable {
-    let id: Int
+    var id: Int
     let name: String
     let description: String
     let estimatedTime: String
-    let locationID: Int
+    var locationID: Int?  // Make locationID optional
     let userCreated: Bool
     let emoji: String
     

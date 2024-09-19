@@ -8,6 +8,12 @@
 
 /* Begin PBXBuildFile section */
 		0C2045FE2C911D8D00D22B1B /* Functions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C2045FD2C911D8D00D22B1B /* Functions.swift */; };
+		0C2046002C91DC6E00D22B1B /* ScheduleActivityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C2045FF2C91DC6D00D22B1B /* ScheduleActivityView.swift */; };
+		0C2046042C920C3600D22B1B /* EmojiPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C2046032C920C3600D22B1B /* EmojiPicker.swift */; };
+		0C2046062C9211C000D22B1B /* AddFreeTimeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C2046052C9211C000D22B1B /* AddFreeTimeView.swift */; };
+		0C2046082C9212AF00D22B1B /* Friend.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C2046072C9212AF00D22B1B /* Friend.swift */; };
+		0C3C95B62C9CBBEF00BE5286 /* UserActivityPreference.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C3C95B52C9CBBEA00BE5286 /* UserActivityPreference.swift */; };
+		0C3C95B82C9CBC2600BE5286 /* UserActivityPreferenceParticipant.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C3C95B72C9CBC2100BE5286 /* UserActivityPreferenceParticipant.swift */; };
 		0C425A892C88F05800B7D9AB /* FriendSocial_IOSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C425A882C88F05800B7D9AB /* FriendSocial_IOSApp.swift */; };
 		0C425A8B2C88F05800B7D9AB /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C425A8A2C88F05800B7D9AB /* ContentView.swift */; };
 		0C425A8D2C88F05800B7D9AB /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0C425A8C2C88F05800B7D9AB /* Assets.xcassets */; };
@@ -15,7 +21,6 @@
 		0C425A9A2C88F05800B7D9AB /* FriendSocial_IOSTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C425A992C88F05800B7D9AB /* FriendSocial_IOSTests.swift */; };
 		0C425AA42C88F05800B7D9AB /* FriendSocial_IOSUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C425AA32C88F05800B7D9AB /* FriendSocial_IOSUITests.swift */; };
 		0C425AA62C88F05800B7D9AB /* FriendSocial_IOSUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C425AA52C88F05800B7D9AB /* FriendSocial_IOSUITestsLaunchTests.swift */; };
-		0C425AC02C88F14000B7D9AB /* ActivitiesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C425AB22C88F13F00B7D9AB /* ActivitiesViewModel.swift */; };
 		0C425AC12C88F14000B7D9AB /* Activity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C425AB42C88F14000B7D9AB /* Activity.swift */; };
 		0C425AC22C88F14000B7D9AB /* User.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C425AB52C88F14000B7D9AB /* User.swift */; };
 		0C425AC32C88F14000B7D9AB /* APIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C425AB72C88F14000B7D9AB /* APIService.swift */; };
@@ -123,6 +128,12 @@
 
 /* Begin PBXFileReference section */
 		0C2045FD2C911D8D00D22B1B /* Functions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Functions.swift; sourceTree = "<group>"; };
+		0C2045FF2C91DC6D00D22B1B /* ScheduleActivityView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ScheduleActivityView.swift; sourceTree = "<group>"; };
+		0C2046032C920C3600D22B1B /* EmojiPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmojiPicker.swift; sourceTree = "<group>"; };
+		0C2046052C9211C000D22B1B /* AddFreeTimeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddFreeTimeView.swift; sourceTree = "<group>"; };
+		0C2046072C9212AF00D22B1B /* Friend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Friend.swift; sourceTree = "<group>"; };
+		0C3C95B52C9CBBEA00BE5286 /* UserActivityPreference.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserActivityPreference.swift; sourceTree = "<group>"; };
+		0C3C95B72C9CBC2100BE5286 /* UserActivityPreferenceParticipant.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserActivityPreferenceParticipant.swift; sourceTree = "<group>"; };
 		0C425A852C88F05800B7D9AB /* FriendSocial-IOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "FriendSocial-IOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		0C425A882C88F05800B7D9AB /* FriendSocial_IOSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendSocial_IOSApp.swift; sourceTree = "<group>"; };
 		0C425A8A2C88F05800B7D9AB /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -133,7 +144,6 @@
 		0C425A9F2C88F05800B7D9AB /* FriendSocial-IOSUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "FriendSocial-IOSUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		0C425AA32C88F05800B7D9AB /* FriendSocial_IOSUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendSocial_IOSUITests.swift; sourceTree = "<group>"; };
 		0C425AA52C88F05800B7D9AB /* FriendSocial_IOSUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendSocial_IOSUITestsLaunchTests.swift; sourceTree = "<group>"; };
-		0C425AB22C88F13F00B7D9AB /* ActivitiesViewModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ActivitiesViewModel.swift; sourceTree = "<group>"; };
 		0C425AB42C88F14000B7D9AB /* Activity.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Activity.swift; sourceTree = "<group>"; };
 		0C425AB52C88F14000B7D9AB /* User.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = User.swift; sourceTree = "<group>"; };
 		0C425AB72C88F14000B7D9AB /* APIService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = APIService.swift; sourceTree = "<group>"; };
@@ -277,7 +287,6 @@
 				0C425AB62C88F14000B7D9AB /* Models */,
 				0C425AB82C88F14000B7D9AB /* Services */,
 				0C425ABA2C88F14000B7D9AB /* Utilities */,
-				0C425AB32C88F13F00B7D9AB /* ViewModels */,
 				0C425ABF2C88F14000B7D9AB /* Views */,
 				0C425A882C88F05800B7D9AB /* FriendSocial_IOSApp.swift */,
 				0C425A8A2C88F05800B7D9AB /* ContentView.swift */,
@@ -312,23 +321,18 @@
 			path = "FriendSocial-IOSUITests";
 			sourceTree = "<group>";
 		};
-		0C425AB32C88F13F00B7D9AB /* ViewModels */ = {
-			isa = PBXGroup;
-			children = (
-				0C425AB22C88F13F00B7D9AB /* ActivitiesViewModel.swift */,
-			);
-			path = ViewModels;
-			sourceTree = "<group>";
-		};
 		0C425AB62C88F14000B7D9AB /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				0C3C95B72C9CBC2100BE5286 /* UserActivityPreferenceParticipant.swift */,
+				0C3C95B52C9CBBEA00BE5286 /* UserActivityPreference.swift */,
 				0C425AC92C893F3100B7D9AB /* ActivityParticipant.swift */,
 				0C425AC82C893F3100B7D9AB /* ScheduledActivity.swift */,
 				0C425AB42C88F14000B7D9AB /* Activity.swift */,
 				0C425AB52C88F14000B7D9AB /* User.swift */,
 				0C425ACC2C89415F00B7D9AB /* Location.swift */,
 				0C80B52F2C910E7700AB720B /* UserAvailability.swift */,
+				0C2046072C9212AF00D22B1B /* Friend.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -461,6 +465,7 @@
 			isa = PBXGroup;
 			children = (
 				0C80B52B2C90D9A400AB720B /* ProfilePictureView.swift */,
+				0C2046032C920C3600D22B1B /* EmojiPicker.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -468,7 +473,9 @@
 		0C80B52E2C90ECFD00AB720B /* Schedule */ = {
 			isa = PBXGroup;
 			children = (
+				0C2045FF2C91DC6D00D22B1B /* ScheduleActivityView.swift */,
 				0C80B5252C907BC100AB720B /* FreeTimeScheduleView.swift */,
+				0C2046052C9211C000D22B1B /* AddFreeTimeView.swift */,
 			);
 			path = Schedule;
 			sourceTree = "<group>";
@@ -675,24 +682,29 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0C425AC02C88F14000B7D9AB /* ActivitiesViewModel.swift in Sources */,
 				0C80B5292C90BD9700AB720B /* DataManager.swift in Sources */,
+				0C2046042C920C3600D22B1B /* EmojiPicker.swift in Sources */,
 				0C425ACB2C893F3100B7D9AB /* ActivityParticipant.swift in Sources */,
 				0C80B4B82C8DF0E400AB720B /* HomeView.swift in Sources */,
 				0C425A8B2C88F05800B7D9AB /* ContentView.swift in Sources */,
 				0C80B5302C910E7700AB720B /* UserAvailability.swift in Sources */,
+				0C3C95B82C9CBC2600BE5286 /* UserActivityPreferenceParticipant.swift in Sources */,
 				0C425AC62C88F14000B7D9AB /* ActivityCard.swift in Sources */,
 				0C425AC12C88F14000B7D9AB /* Activity.swift in Sources */,
+				0C2046062C9211C000D22B1B /* AddFreeTimeView.swift in Sources */,
 				0C425AC22C88F14000B7D9AB /* User.swift in Sources */,
+				0C3C95B62C9CBBEF00BE5286 /* UserActivityPreference.swift in Sources */,
 				0C425AC42C88F14000B7D9AB /* Constants.swift in Sources */,
 				0C80B5262C907BC100AB720B /* FreeTimeScheduleView.swift in Sources */,
 				0C2045FE2C911D8D00D22B1B /* Functions.swift in Sources */,
 				0C425ACA2C893F3100B7D9AB /* ScheduledActivity.swift in Sources */,
 				0C80B52D2C90D9A400AB720B /* ProfilePictureView.swift in Sources */,
+				0C2046002C91DC6E00D22B1B /* ScheduleActivityView.swift in Sources */,
 				0C425AC32C88F14000B7D9AB /* APIService.swift in Sources */,
 				0C425A892C88F05800B7D9AB /* FriendSocial_IOSApp.swift in Sources */,
 				0C425ACD2C89415F00B7D9AB /* Location.swift in Sources */,
 				0C425AC52C88F14000B7D9AB /* ActivitiesView.swift in Sources */,
+				0C2046082C9212AF00D22B1B /* Friend.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -2,13 +2,14 @@ import SwiftUI
 
 struct FreeTimeScheduleView: View {
     @Environment(\.presentationMode) var presentationMode: Binding<PresentationMode>
-    @StateObject private var dataManager: DataManager = DataManager.shared
+    @EnvironmentObject var dataManager: DataManager
     @State private var selectedDate: Date = Date()
     @State private var selectedFilter: String = "See all"
     @State private var isCalendarDropdownVisible: Bool = false
     @State private var isProfileMenuOpen: Bool = false
     @State private var events: [Event] = []
     @State private var selectedEventId: Int? = nil
+    @State private var isAddEventMenuPresented: Bool = false
     
     let filters: [String] = ["See all", "Social", "Personal"]
     
@@ -38,7 +39,7 @@ struct FreeTimeScheduleView: View {
     }
     
     private var scheduleContent: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: 0) {
             scheduleHeader
             fullWidthDivider
             VStack(spacing: 20) {
@@ -46,7 +47,7 @@ struct FreeTimeScheduleView: View {
                 incomingInvites
             }
             .padding(.horizontal)
-            .padding(.vertical, 5)
+            .padding(.top, 15)
             Spacer(minLength: 80)
         }
     }
@@ -58,7 +59,7 @@ struct FreeTimeScheduleView: View {
             filterSection
         }
         .padding(.horizontal)
-        .padding(.top)
+        .padding(.vertical)
         .background(Color.gray.opacity(0.1))
     }
     
@@ -155,7 +156,7 @@ struct FreeTimeScheduleView: View {
     private var addEventButton: some View {
         HStack {
             Button(action: {
-                // Action to add new event
+                isAddEventMenuPresented = true
             }) {
                 Image(systemName: "plus")
                     .font(.title2)
@@ -175,6 +176,24 @@ struct FreeTimeScheduleView: View {
         .padding()
         .background(Color.gray.opacity(0.1))
         .cornerRadius(10)
+        .confirmationDialog("Add to Schedule", isPresented: $isAddEventMenuPresented) {
+            Button("Add Free Time") {
+                presentView(ScheduleActivityView())
+            }
+            Button("Schedule New Activity") {
+                presentView(ScheduleActivityView())
+            }
+        }
+    }
+
+    // Add this function to handle view presentation
+    private func presentView<Content: View>(_ view: Content) {
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+           let window = windowScene.windows.first,
+           let rootViewController = window.rootViewController {
+            let hostingController = UIHostingController(rootView: view)
+            rootViewController.present(hostingController, animated: true, completion: nil)
+        }
     }
 
     private var fullWidthDivider: some View {
@@ -445,11 +464,20 @@ struct ParticipantsPreview: View {
         HStack(spacing: 5) {
             ForEach(participants.prefix(3).indices, id: \.self) { index in
                 if let user = participantUsers[participants[index].userID] {
-                    Image(user.profilePicture ?? "default_profile")
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: 30, height: 30)
-                        .clipShape(Circle())
+                    ZStack(alignment: .topTrailing) {
+                        Image(user.profilePicture ?? "default_profile")
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 30, height: 30)
+                            .clipShape(Circle())
+                            .overlay(
+                                Circle()
+                                    .stroke(statusColor(for: participants[index].inviteStatus), lineWidth: 2)
+                            )
+                        
+                        statusIcon(for: participants[index].inviteStatus)
+                            .offset(x: 2, y: -2)
+                    }
                 }
             }
             if participants.count > 3 {
@@ -467,6 +495,46 @@ struct ParticipantsPreview: View {
             }
         }
     }
+    
+    private func statusColor(for status: String) -> Color {
+        switch status.lowercased() {
+        case "accepted":
+            return .green
+        case "pending":
+            return .yellow
+        case "rejected":
+            return .red
+        default:
+            return .clear
+        }
+    }
+    
+    private func statusIcon(for status: String) -> some View {
+        ZStack {
+            Circle()
+                .fill(Color.white)
+                .frame(width: 12, height: 12)
+            
+            Image(systemName: statusImageName(for: status))
+                .resizable()
+                .scaledToFit()
+                .frame(width: 8, height: 8)
+                .foregroundColor(statusColor(for: status))
+        }
+    }
+    
+    private func statusImageName(for status: String) -> String {
+        switch status.lowercased() {
+        case "accepted":
+            return "checkmark"
+        case "pending":
+            return "questionmark"
+        case "rejected":
+            return "xmark"
+        default:
+            return ""
+        }
+    }
 }
 
 private struct ParticipantsView: View {
@@ -480,11 +548,20 @@ private struct ParticipantsView: View {
                 ForEach(participants, id: \.id) { participant in
                     if let user = participantUsers[participant.userID] {
                         HStack {
-                            Image(user.profilePicture ?? "default_profile")
-                                .resizable()
-                                .scaledToFill()
-                                .frame(width: 50, height: 50)
-                                .clipShape(Circle())
+                            ZStack(alignment: .topTrailing) {
+                                Image(user.profilePicture ?? "default_profile")
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: 50, height: 50)
+                                    .clipShape(Circle())
+                                    .overlay(
+                                        Circle()
+                                            .stroke(statusColor(for: participant.inviteStatus), lineWidth: 2)
+                                    )
+                                
+                                statusIcon(for: participant.inviteStatus)
+                                    .offset(x: 3, y: -3)
+                            }
                             Text(user.name)
                                 .font(.custom(FontNames.poppinsRegular, size: 16))
                         }
@@ -502,6 +579,46 @@ private struct ParticipantsView: View {
                     }
                 }
             }
+        }
+    }
+    
+    private func statusColor(for status: String) -> Color {
+        switch status.lowercased() {
+        case "accepted":
+            return .green
+        case "pending":
+            return .yellow
+        case "rejected":
+            return .red
+        default:
+            return .clear
+        }
+    }
+    
+    private func statusIcon(for status: String) -> some View {
+        ZStack {
+            Circle()
+                .fill(Color.white)
+                .frame(width: 16, height: 16)
+            
+            Image(systemName: statusImageName(for: status))
+                .resizable()
+                .scaledToFit()
+                .frame(width: 12, height: 12)
+                .foregroundColor(statusColor(for: status))
+        }
+    }
+    
+    private func statusImageName(for status: String) -> String {
+        switch status.lowercased() {
+        case "accepted":
+            return "checkmark"
+        case "pending":
+            return "questionmark"
+        case "rejected":
+            return "xmark"
+        default:
+            return ""
         }
     }
 }
@@ -535,16 +652,6 @@ struct InviteCard: View {
         .background(Color.gray.opacity(0.1))
         .cornerRadius(10)
     }
-}
-
-// Constants
-enum FontNames {
-    static let poppinsRegular: String = "Poppins-Regular"
-    static let poppinsMedium: String = "Poppins-Medium"
-    static let poppinsSemiBold: String = "Poppins-SemiBold"
-    static let interMedium: String = "Inter_18pt-Medium"
-    static let interRegular: String = "Inter_18pt-Regular"
-    static let interSemiBold: String = "Inter_18pt-SemiBold"
 }
 
 struct Event {

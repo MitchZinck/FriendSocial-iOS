@@ -2,70 +2,58 @@ import SwiftUI
 
 struct ActivitiesView: View {
     @Environment(\.presentationMode) var presentationMode
-    @StateObject private var viewModel = ActivitiesViewModel()
-    @State private var selectedTab: Tab = .upcoming
+    @EnvironmentObject var dataManager: DataManager
     @State private var isProfileMenuOpen = false
-    
-    enum Tab {
-        case upcoming, complete
-    }
+    @State private var showScheduleActivityView = false
+    @State private var numberOfActivitiesToShow = 10
 
     var body: some View {
         NavigationStack {
-            ZStack {
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 10) {
-                        addNewActivityButton
-                    }
-                    .padding(.horizontal)
-                    .padding(.top)
-                    VStack(alignment: .leading, spacing: 10) {
-                        suggestedActivitiesSection
-                    }
-                    VStack(alignment: .leading, spacing: 10) {
-                        scheduledActivitiesSection
-                    }
-                    .padding(.horizontal)
-                    .padding(.bottom)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    addNewActivityButton
                 }
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .navigationBarLeading) {
-                        Button(action: {
-                            presentationMode.wrappedValue.dismiss()
-                        }) {
-                            Image(systemName: "chevron.left")
-                                .foregroundColor(.black)
-                        }
-                    }
-                    ToolbarItem(placement: .principal) { titleView }
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        // Replace ProfilePictureView with a simple Image
-                        Image(DataManager.shared.currentUser?.profilePicture ?? "default_profile")
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: 40, height: 40)
-                            .clipShape(Circle())
-                    }
+                VStack(alignment: .leading, spacing: 0) {
+                    suggestedActivitiesSection
                 }
+                VStack(alignment: .leading, spacing: 20) {
+                    scheduledActivitiesSection
+                }
+                .padding()
+            }
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                toolbarContent
+            }
+            .navigationBarBackButtonHidden(true)
+            .sheet(isPresented: $showScheduleActivityView) {
+                ScheduleActivityView()
+            }
+            .onAppear {
+                print("ActivitiesView appeared")
+                print("Number of scheduled activities: \(dataManager.scheduledActivities.count)")
+                print("Number of activities: \(dataManager.activities.count)")
             }
         }
-        .navigationBarBackButtonHidden(true)
     }
-    
+
     // MARK: - Subviews
-    
+
     private var addNewActivityButton: some View {
-        Button(action: { /* Add action for creating new activity */ }) {
+        Button(action: {
+            showScheduleActivityView = true
+        }) {
             Label("Add New", systemImage: "plus.circle.fill")
                 .font(.custom("Poppins-Medium", size: 16))
                 .foregroundColor(.black)
-                .padding(.horizontal, 30)
-                .padding(.vertical, 5)
+                .padding()
+                .frame(maxWidth: .infinity)
                 .background(
-                    LinearGradient(gradient: Gradient(colors: [Color.purple.opacity(0.1), Color.yellow.opacity(0.3)]),
-                                   startPoint: .top,
-                                   endPoint: .bottom)
+                    LinearGradient(
+                        gradient: Gradient(colors: [Color.purple.opacity(0.1), Color.yellow.opacity(0.3)]),
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
                 )
                 .cornerRadius(15)
                 .overlay(
@@ -73,18 +61,19 @@ struct ActivitiesView: View {
                         .stroke(Color.gray.opacity(0.5), lineWidth: 0.5)
                 )
         }
-        .frame(maxWidth: .infinity, alignment: .center)
+        .padding(.horizontal)
+        .padding(.top, 10)
     }
-    
+
     private var suggestedActivitiesSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Suggested Activities")
                 .font(.custom("Poppins-SemiBold", size: 18))
                 .padding(.leading, 15)
-            
+
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 20) {
-                    ForEach(SuggestedActivity.mockData, id: \.name) { activity in
+                    ForEach(SuggestedActivity.mockData) { activity in
                         SuggestedActivityCard(activity: activity)
                     }
                 }
@@ -92,111 +81,139 @@ struct ActivitiesView: View {
             }
         }
     }
-    
+
     private var scheduledActivitiesSection: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("Scheduled")
                 .font(.custom("Poppins-SemiBold", size: 18))
-            
-            let todayActivities = todayScheduledActivities()
-            if !todayActivities.isEmpty {
-                Text("Today, \(Date().formatted(.dateTime.month().day()))")
-                    .font(.custom("Poppins-Regular", size: 16))
-                    .foregroundColor(.gray)
-                    .padding(.bottom, 10)
-                
-                // Show only today's scheduled activities
-                ForEach(todayActivities, id: \.id) { scheduledActivity in
-                    if let activity = viewModel.activities.first(where: { $0.id == scheduledActivity.activityID }) {
-                        ActivityCard(
-                            activity: activity,
-                            scheduledActivity: scheduledActivity,
-                            location: viewModel.getLocation(for: activity.locationID),
-                            participants: viewModel.activityParticipants[activity.id] ?? [],
-                            participantUsers: viewModel.participantUsers,
-                            onCancel: viewModel.cancelActivity,
-                            onReschedule: viewModel.rescheduleActivity
-                        )
-                        .padding(.bottom, 10)
-                    }
-                }
-            }
-            
-            // Add future scheduled activities
-            ForEach(futureDates(), id: \.self) { date in
-                VStack(alignment: .leading, spacing: 0) {
-                    Text(date.formatted(.dateTime.weekday(.abbreviated).month().day()))
-                        .font(.custom("Poppins-Regular", size: 16))
-                        .foregroundColor(.gray)
-                        .padding(.bottom, 10)
-                    
-                    ForEach(filteredScheduledActivities(for: date), id: \.id) { scheduledActivity in
-                        if let activity = viewModel.activities.first(where: { $0.id == scheduledActivity.activityID }) {
-                            ActivityCard(
-                                activity: activity,
-                                scheduledActivity: scheduledActivity,
-                                location: viewModel.getLocation(for: activity.locationID),
-                                participants: viewModel.activityParticipants[activity.id] ?? [],
-                                participantUsers: viewModel.participantUsers,
-                                onCancel: viewModel.cancelActivity,
-                                onReschedule: viewModel.rescheduleActivity
-                            )
-                            .padding(.bottom, 10)
+
+            VStack(alignment: .leading, spacing: 20) {
+                ForEach(Array(groupedScheduledActivities.keys.sorted().prefix(numberOfActivitiesToShow)), id: \.self) { date in
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text(dateString(from: date))
+                            .font(.custom("Poppins-Regular", size: 16))
+                            .foregroundColor(.gray)
+
+                        ForEach(groupedScheduledActivities[date] ?? []) { scheduledActivity in
+                            if let activity = dataManager.activities.first(where: { $0.id == scheduledActivity.activityID }) {
+                                ActivityCard(
+                                    activity: activity,
+                                    scheduledActivity: scheduledActivity,
+                                    location: dataManager.locations.first(where: { $0.id == activity.locationID }),
+                                    participants: dataManager.activityParticipants[scheduledActivity.id] ?? [],
+                                    participantUsers: dataManager.participantUsers,
+                                    onCancel: cancelActivity,
+                                    onReschedule: { _ in
+                                        // Implement rescheduling logic here
+                                    }
+                                )
+                            }
                         }
                     }
                 }
             }
-        }
-    }
-    
-    private var titleView: some View {
-        Text("Activities")
-            .font(.custom("Poppins-Bold", size: 24))
-    }
-    
-    // MARK: - Helper Methods
-    
-    private var filteredScheduledActivities: [ScheduledActivity] {
-        viewModel.userScheduledActivities.filter { activity in
-            switch selectedTab {
-            case .upcoming:
-                return activity.scheduledAt > Date() && Calendar.current.isDateInToday(activity.scheduledAt)
-            case .complete:
-                return activity.scheduledAt <= Date()
+
+            if numberOfActivitiesToShow < groupedScheduledActivities.keys.count {
+                Button(action: {
+                    numberOfActivitiesToShow += 10
+                }) {
+                    Text("See More")
+                        .font(.custom("Poppins-Medium", size: 16))
+                        .foregroundColor(.blue)
+                        .padding(.vertical, 10)
+                        .frame(maxWidth: .infinity)
+                        .background(Color.blue.opacity(0.1))
+                        .cornerRadius(10)
+                }
+                .padding(.top, 20)
             }
         }
     }
-    
-    private func filteredScheduledActivities(for date: Date) -> [ScheduledActivity] {
-        viewModel.userScheduledActivities.filter { activity in
-            Calendar.current.isDate(activity.scheduledAt, inSameDayAs: date)
+
+    private var toolbarContent: some ToolbarContent {
+        Group {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button(action: {
+                    presentationMode.wrappedValue.dismiss()
+                }) {
+                    Image(systemName: "chevron.left")
+                        .foregroundColor(.black)
+                }
+            }
+            ToolbarItem(placement: .principal) {
+                Text("Activities")
+                    .font(.custom("Poppins-Bold", size: 24))
+            }
+            ToolbarItem(placement: .navigationBarTrailing) {
+                profileImage
+            }
         }
     }
-    
-    private func futureDates() -> [Date] {
-        let calendar = Calendar.current
-        let today = Date()
-        let uniqueDates = Set(viewModel.userScheduledActivities
-            .filter { $0.scheduledAt > today && !calendar.isDateInToday($0.scheduledAt) }
-            .map { calendar.startOfDay(for: $0.scheduledAt) })
-        return Array(uniqueDates).sorted()
+
+    private var profileImage: some View {
+        Menu {
+            Button(action: {
+                // Profile action
+            }) {
+                Label("Profile", systemImage: "person.circle")
+            }
+            Button(action: {
+                // Settings action
+            }) {
+                Label("Settings", systemImage: "gear")
+            }
+            Button(action: {
+                // Logout action
+            }) {
+                Label("Log Out", systemImage: "arrow.right.square")
+            }
+            .foregroundColor(.red)
+        } label: {
+            Image(dataManager.currentUser?.profilePicture ?? "default_profile")
+                .resizable()
+                .scaledToFill()
+                .frame(width: 40, height: 40)
+                .clipShape(Circle())
+        }
     }
-    
-    private func todayScheduledActivities() -> [ScheduledActivity] {
-        let now = Date()
-        return viewModel.userScheduledActivities.filter { activity in
-            Calendar.current.isDateInToday(activity.scheduledAt) && activity.scheduledAt > now
+
+    // MARK: - Helper Methods
+
+    private var groupedScheduledActivities: [Date: [ScheduledActivity]] {
+        let calendar = Calendar.current
+        let grouped = Dictionary(grouping: dataManager.scheduledActivities) { (activity) -> Date in
+            calendar.startOfDay(for: activity.scheduledAt)
+        }
+        return grouped
+    }
+
+    private func dateString(from date: Date) -> String {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "EEEE, MMM d"
+        return dateFormatter.string(from: date)
+    }
+
+    private func cancelActivity(_ scheduledActivity: ScheduledActivity) {
+        Task {
+            do {
+                try await dataManager.cancelScheduledActivity(scheduledActivity)
+            } catch {
+                print("Error cancelling activity: \(error)")
+                // Handle the error, e.g., show an alert
+            }
         }
     }
 }
 
 // MARK: - Supporting Types
 
-struct SuggestedActivity {
+struct SuggestedActivity: Identifiable {
+    let id = UUID()
     let name: String
     let date: Date
     let image: String
     let emoji: String
+
     static let mockData = [
         SuggestedActivity(name: "Drinks w/ Martha", date: Date().addingTimeInterval(86400), image: "Drinks", emoji: "🍹"),
         SuggestedActivity(name: "Monday Gym", date: Date().addingTimeInterval(172800), image: "Gym", emoji: "🏋️"),
@@ -206,7 +223,7 @@ struct SuggestedActivity {
 
 struct SuggestedActivityCard: View {
     let activity: SuggestedActivity
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Image(activity.image)
@@ -216,22 +233,17 @@ struct SuggestedActivityCard: View {
                 .clipped()
                 .cornerRadius(10)
                 .shadow(color: Color.black.opacity(0.5), radius: 3, x: 0, y: 3)
-            
+
             VStack(alignment: .leading, spacing: 0) {
-                Text(activity.emoji + " " + activity.name)
+                Text("\(activity.emoji) \(activity.name)")
                     .font(.custom("Poppins-Medium", size: 16))
                     .foregroundColor(.black)
                     .lineLimit(1)
                     .truncationMode(.tail)
-                
-                HStack(spacing: 0) {
-                    Text(activity.emoji + " ")
-                        .opacity(0)
-                        .font(.custom("Poppins-Regular", size: 16))
-                    Text(activity.date.formatted(.dateTime.weekday().month().day()))
-                        .font(.custom("Poppins-Regular", size: 14))
-                }
-                .foregroundColor(.gray)
+
+                Text(activity.date, style: .date)
+                    .font(.custom("Poppins-Regular", size: 14))
+                    .foregroundColor(.gray)
             }
             .frame(width: 150, alignment: .leading)
         }
