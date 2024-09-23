@@ -38,7 +38,7 @@ struct HomeView: View {
                 ActivitiesView()
             }
             .navigationDestination(isPresented: $isFreeTimeScheduleViewActive) {
-                FreeTimeScheduleView()
+                CalendarView()
             }
         }
     }
@@ -105,7 +105,7 @@ struct HomeView: View {
         case "Activities":
             return AnyView(ActivitiesView())
         case "Free Time":
-            return AnyView(FreeTimeScheduleView())
+            return AnyView(CalendarView())
         default:
             return AnyView(EmptyView())
         }
@@ -145,7 +145,10 @@ struct HomeView: View {
             if let firstUpcomingActivity: ScheduledActivity = dataManager.scheduledActivities
                 .filter({ $0.scheduledAt >= Date() })
                 .sorted(by: { $0.scheduledAt < $1.scheduledAt })
-                .first,
+                .first(where: { scheduledActivity in
+                    let participants = dataManager.getActivityParticipants(for: scheduledActivity.id)
+                    return participants.first(where: { $0.userID == dataManager.currentUser?.id })?.inviteStatus == "Accepted"
+                }),
                let activity: Activity = dataManager.activities.first(where: { $0.id == firstUpcomingActivity.activityID }) {
                 VStack(alignment: .leading, spacing: 10) {
                     upcomingActivityHeader
@@ -154,9 +157,7 @@ struct HomeView: View {
                         scheduledActivity: firstUpcomingActivity,
                         location: dataManager.locations.first(where: { $0.id == activity.locationID }),
                         participants: dataManager.getActivityParticipants(for: firstUpcomingActivity.id),
-                        participantUsers: dataManager.participantUsers,
-                        onCancel: { _ in /* Implement cancel logic */ },
-                        onReschedule: { _ in /* Implement reschedule logic */ }
+                        participantUsers: dataManager.participantUsers
                     )
                 }
             } else {

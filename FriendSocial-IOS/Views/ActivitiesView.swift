@@ -95,17 +95,15 @@ struct ActivitiesView: View {
                             .foregroundColor(.gray)
 
                         ForEach(groupedScheduledActivities[date] ?? []) { scheduledActivity in
-                            if let activity = dataManager.activities.first(where: { $0.id == scheduledActivity.activityID }) {
+                            if let activity = dataManager.activities.first(where: { $0.id == scheduledActivity.activityID }),
+                               let currentUserParticipant = dataManager.getActivityParticipants(for: scheduledActivity.id).first(where: { $0.userID == dataManager.currentUser?.id }),
+                               currentUserParticipant.inviteStatus == "Accepted" {
                                 ActivityCard(
                                     activity: activity,
                                     scheduledActivity: scheduledActivity,
                                     location: dataManager.locations.first(where: { $0.id == activity.locationID }),
                                     participants: dataManager.activityParticipants[scheduledActivity.id] ?? [],
-                                    participantUsers: dataManager.participantUsers,
-                                    onCancel: cancelActivity,
-                                    onReschedule: { _ in
-                                        // Implement rescheduling logic here
-                                    }
+                                    participantUsers: dataManager.participantUsers
                                 )
                             }
                         }
@@ -181,7 +179,10 @@ struct ActivitiesView: View {
 
     private var groupedScheduledActivities: [Date: [ScheduledActivity]] {
         let calendar = Calendar.current
-        let grouped = Dictionary(grouping: dataManager.scheduledActivities) { (activity) -> Date in
+        let grouped = Dictionary(grouping: dataManager.scheduledActivities.filter { scheduledActivity in
+            let participants = dataManager.getActivityParticipants(for: scheduledActivity.id)
+            return participants.first(where: { $0.userID == dataManager.currentUser?.id })?.inviteStatus == "Accepted"
+        }) { (activity) -> Date in
             calendar.startOfDay(for: activity.scheduledAt)
         }
         return grouped
@@ -191,17 +192,6 @@ struct ActivitiesView: View {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "EEEE, MMM d"
         return dateFormatter.string(from: date)
-    }
-
-    private func cancelActivity(_ scheduledActivity: ScheduledActivity) {
-        Task {
-            do {
-                try await dataManager.cancelScheduledActivity(scheduledActivity)
-            } catch {
-                print("Error cancelling activity: \(error)")
-                // Handle the error, e.g., show an alert
-            }
-        }
     }
 }
 

@@ -100,24 +100,28 @@ class APIService {
             throw error
         }
     }
-    
-    func fetchUser(id: Int) async throws -> User {
-        let url = URL(string: "\(baseURL)/users/\(id)")!
+
+    func fetchUsers(ids: [Int]) async throws -> [User] {
+        let idsString = ids.map { String($0) }.joined(separator: ",")
+        let url = URL(string: "\(baseURL)/users/\(idsString)")!
         return try await performRequest(url: url)
     }
     
-    func fetchScheduledActivity(scheduledActivityID: Int) async throws -> ScheduledActivity {
-        let url = URL(string: "\(baseURL)/scheduled_activity/\(scheduledActivityID)")!
+    func fetchScheduledActivities(ids: [Int]) async throws -> [ScheduledActivity] {
+        let idsString = ids.map { String($0) }.joined(separator: ",")
+        let url = URL(string: "\(baseURL)/scheduled_activities/\(idsString)")!
+        return try await performRequest(url: url)
+    }
+
+    func fetchActivities(ids: [Int]) async throws -> [Activity] {
+        let idsString = ids.map { String($0) }.joined(separator: ",")
+        let url = URL(string: "\(baseURL)/activities/\(idsString)")!
         return try await performRequest(url: url)
     }
     
-    func fetchActivity(id: Int) async throws -> Activity {
-        let url = URL(string: "\(baseURL)/activity/\(id)")!
-        return try await performRequest(url: url)
-    }
-    
-    func fetchLocation(id: Int) async throws -> Location {
-        let url = URL(string: "\(baseURL)/location/\(id)")!
+    func fetchLocations(ids: [Int]) async throws -> [Location] {
+        let idsString = ids.map { String($0) }.joined(separator: ",")
+        let url = URL(string: "\(baseURL)/locations/\(idsString)")!
         return try await performRequest(url: url)
     }
     
@@ -126,8 +130,9 @@ class APIService {
         return try await performRequest(url: url)
     }
     
-    func fetchActivityParticipantsByScheduledActivityID(scheduledActivityID: Int) async throws -> [ActivityParticipant] {
-        let url = URL(string: "\(baseURL)/activity_participants/scheduled_activity/\(scheduledActivityID)")!
+    func fetchActivityParticipantsByScheduledActivityID(scheduledActivityID: [Int]) async throws -> [ActivityParticipant] {
+        let idsString = scheduledActivityID.map { String($0) }.joined(separator: ",")
+        let url = URL(string: "\(baseURL)/activity_participants/scheduled_activities/\(idsString)")!
         return try await performRequest(url: url)
     }
     
@@ -227,7 +232,7 @@ class APIService {
         )
         
         // Format the dates array for curl output (JSON valid)
-        let formattedDatesString = formattedDates.map { "\"\($0)\"" }.joined(separator: ", ")
+        //let formattedDatesString = formattedDates.map { "\"\($0)\"" }.joined(separator: ", ")
 
         // // Print curl request for testing
         // print("""
@@ -306,17 +311,46 @@ class APIService {
     }
 
     struct RepeatScheduledActivityRequest: Codable {
-        let userPreferenceId: Int
+        let userPreferenceId: String
         let startTime: Date
         let timeZone: String
+
+        enum CodingKeys: String, CodingKey {
+            case userPreferenceId = "preference_id"
+            case startTime = "start_time"
+            case timeZone = "time_zone"
+        }
     }
 
-    func postCreateRepeatScheduledActivity(_ userPreferenceId: Int, _ startTime: Date, _ timeZone: TimeZone) async throws -> [ScheduledActivity] {
-        let url = URL(string: "\(baseURL)/scheduled_activity/repeat/\(userPreferenceId)")!
+    func postCreateRepeatScheduledActivity(_ userPreferenceId: String, _ startTime: Date, _ timeZone: TimeZone) async throws -> [ScheduledActivity] {
+        let url = URL(string: "\(baseURL)/scheduled_activity/repeat")!
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = flexibleDateEncodingStrategy()
         let requestPayload = RepeatScheduledActivityRequest(userPreferenceId: userPreferenceId, startTime: startTime, timeZone: timeZone.identifier)
         let data = try encoder.encode(requestPayload)
         return try await performPOSTRequest(url: url, body: data)
+    }
+
+    func updateActivityParticipant(_ participant: ActivityParticipant) async throws -> ActivityParticipant {
+        let url = URL(string: "\(baseURL)/activity_participant/\(participant.id)")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "PUT"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = flexibleDateEncodingStrategy()
+        let data = try encoder.encode(participant)
+        request.httpBody = data
+        
+        let (responseData, response) = try await session.data(for: request)
+        
+        if let httpResponse = response as? HTTPURLResponse, !(200...299).contains(httpResponse.statusCode) {
+            let errorMessage = "PUT to \(url) failed with status code \(httpResponse.statusCode)"
+            throw NSError(domain: "", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: errorMessage])
+        }
+        
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = flexibleDateDecodingStrategy()
+        return try decoder.decode(ActivityParticipant.self, from: responseData)
     }
 }

@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct ProfilePictureView: View {
+struct ProfilePicture: View {
     let user: User?
     let size: CGFloat
     @Binding var isProfileMenuOpen: Bool

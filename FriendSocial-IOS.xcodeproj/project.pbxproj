@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0C128B072CA1DB1D004AA0D5 /* InviteCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C128B062CA1DB1D004AA0D5 /* InviteCard.swift */; };
+		0C128B0A2CA1DF89004AA0D5 /* ParticipantsPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C128B082CA1DF89004AA0D5 /* ParticipantsPreview.swift */; };
+		0C128B0B2CA1DF89004AA0D5 /* ParticipantsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C128B092CA1DF89004AA0D5 /* ParticipantsView.swift */; };
+		0C128B0D2CA1EE48004AA0D5 /* Invite.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C128B0C2CA1EE45004AA0D5 /* Invite.swift */; };
 		0C2045FE2C911D8D00D22B1B /* Functions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C2045FD2C911D8D00D22B1B /* Functions.swift */; };
 		0C2046002C91DC6E00D22B1B /* ScheduleActivityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C2045FF2C91DC6D00D22B1B /* ScheduleActivityView.swift */; };
 		0C2046042C920C3600D22B1B /* EmojiPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C2046032C920C3600D22B1B /* EmojiPicker.swift */; };
@@ -103,9 +107,9 @@
 		0C80B5222C8E72DA00AB720B /* Inter_18pt-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 0C80B4EC2C8E72DA00AB720B /* Inter_18pt-Bold.ttf */; };
 		0C80B5232C8E72DA00AB720B /* Inter_18pt-ExtraBoldItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 0C80B4ED2C8E72DA00AB720B /* Inter_18pt-ExtraBoldItalic.ttf */; };
 		0C80B5242C8E72DA00AB720B /* Inter_24pt-SemiBoldItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 0C80B4EE2C8E72DA00AB720B /* Inter_24pt-SemiBoldItalic.ttf */; };
-		0C80B5262C907BC100AB720B /* FreeTimeScheduleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C80B5252C907BC100AB720B /* FreeTimeScheduleView.swift */; };
+		0C80B5262C907BC100AB720B /* CalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C80B5252C907BC100AB720B /* CalendarView.swift */; };
 		0C80B5292C90BD9700AB720B /* DataManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C80B5272C90BD9700AB720B /* DataManager.swift */; };
-		0C80B52D2C90D9A400AB720B /* ProfilePictureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C80B52B2C90D9A400AB720B /* ProfilePictureView.swift */; };
+		0C80B52D2C90D9A400AB720B /* ProfilePicture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C80B52B2C90D9A400AB720B /* ProfilePicture.swift */; };
 		0C80B5302C910E7700AB720B /* UserAvailability.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C80B52F2C910E7700AB720B /* UserAvailability.swift */; };
 /* End PBXBuildFile section */
 
@@ -127,6 +131,10 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		0C128B062CA1DB1D004AA0D5 /* InviteCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InviteCard.swift; sourceTree = "<group>"; };
+		0C128B082CA1DF89004AA0D5 /* ParticipantsPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParticipantsPreview.swift; sourceTree = "<group>"; };
+		0C128B092CA1DF89004AA0D5 /* ParticipantsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParticipantsView.swift; sourceTree = "<group>"; };
+		0C128B0C2CA1EE45004AA0D5 /* Invite.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Invite.swift; sourceTree = "<group>"; };
 		0C2045FD2C911D8D00D22B1B /* Functions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Functions.swift; sourceTree = "<group>"; };
 		0C2045FF2C91DC6D00D22B1B /* ScheduleActivityView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ScheduleActivityView.swift; sourceTree = "<group>"; };
 		0C2046032C920C3600D22B1B /* EmojiPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmojiPicker.swift; sourceTree = "<group>"; };
@@ -227,9 +235,9 @@
 		0C80B4EC2C8E72DA00AB720B /* Inter_18pt-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Inter_18pt-Bold.ttf"; sourceTree = "<group>"; };
 		0C80B4ED2C8E72DA00AB720B /* Inter_18pt-ExtraBoldItalic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Inter_18pt-ExtraBoldItalic.ttf"; sourceTree = "<group>"; };
 		0C80B4EE2C8E72DA00AB720B /* Inter_24pt-SemiBoldItalic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Inter_24pt-SemiBoldItalic.ttf"; sourceTree = "<group>"; };
-		0C80B5252C907BC100AB720B /* FreeTimeScheduleView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FreeTimeScheduleView.swift; sourceTree = "<group>"; };
+		0C80B5252C907BC100AB720B /* CalendarView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CalendarView.swift; sourceTree = "<group>"; };
 		0C80B5272C90BD9700AB720B /* DataManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DataManager.swift; sourceTree = "<group>"; };
-		0C80B52B2C90D9A400AB720B /* ProfilePictureView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ProfilePictureView.swift; sourceTree = "<group>"; };
+		0C80B52B2C90D9A400AB720B /* ProfilePicture.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ProfilePicture.swift; sourceTree = "<group>"; };
 		0C80B52F2C910E7700AB720B /* UserAvailability.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserAvailability.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -289,7 +297,6 @@
 				0C425ABA2C88F14000B7D9AB /* Utilities */,
 				0C425ABF2C88F14000B7D9AB /* Views */,
 				0C425A882C88F05800B7D9AB /* FriendSocial_IOSApp.swift */,
-				0C425A8A2C88F05800B7D9AB /* ContentView.swift */,
 				0C425A8C2C88F05800B7D9AB /* Assets.xcassets */,
 				0C425A8E2C88F05800B7D9AB /* Preview Content */,
 			);
@@ -324,6 +331,7 @@
 		0C425AB62C88F14000B7D9AB /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				0C128B0C2CA1EE45004AA0D5 /* Invite.swift */,
 				0C3C95B72C9CBC2100BE5286 /* UserActivityPreferenceParticipant.swift */,
 				0C3C95B52C9CBBEA00BE5286 /* UserActivityPreference.swift */,
 				0C425AC92C893F3100B7D9AB /* ActivityParticipant.swift */,
@@ -354,22 +362,16 @@
 			path = Utilities;
 			sourceTree = "<group>";
 		};
-		0C425ABD2C88F14000B7D9AB /* ActivityViews */ = {
-			isa = PBXGroup;
-			children = (
-				0C425ABB2C88F14000B7D9AB /* ActivitiesView.swift */,
-				0C425ABC2C88F14000B7D9AB /* ActivityCard.swift */,
-			);
-			path = ActivityViews;
-			sourceTree = "<group>";
-		};
 		0C425ABF2C88F14000B7D9AB /* Views */ = {
 			isa = PBXGroup;
 			children = (
-				0C80B52E2C90ECFD00AB720B /* Schedule */,
 				0C80B52C2C90D9A400AB720B /* Components */,
 				0C80B4B72C8DF0E400AB720B /* HomeView.swift */,
-				0C425ABD2C88F14000B7D9AB /* ActivityViews */,
+				0C425ABB2C88F14000B7D9AB /* ActivitiesView.swift */,
+				0C2045FF2C91DC6D00D22B1B /* ScheduleActivityView.swift */,
+				0C80B5252C907BC100AB720B /* CalendarView.swift */,
+				0C2046052C9211C000D22B1B /* AddFreeTimeView.swift */,
+				0C425A8A2C88F05800B7D9AB /* ContentView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -464,20 +466,14 @@
 		0C80B52C2C90D9A400AB720B /* Components */ = {
 			isa = PBXGroup;
 			children = (
-				0C80B52B2C90D9A400AB720B /* ProfilePictureView.swift */,
+				0C128B082CA1DF89004AA0D5 /* ParticipantsPreview.swift */,
+				0C128B092CA1DF89004AA0D5 /* ParticipantsView.swift */,
+				0C128B062CA1DB1D004AA0D5 /* InviteCard.swift */,
+				0C80B52B2C90D9A400AB720B /* ProfilePicture.swift */,
 				0C2046032C920C3600D22B1B /* EmojiPicker.swift */,
+				0C425ABC2C88F14000B7D9AB /* ActivityCard.swift */,
 			);
 			path = Components;
-			sourceTree = "<group>";
-		};
-		0C80B52E2C90ECFD00AB720B /* Schedule */ = {
-			isa = PBXGroup;
-			children = (
-				0C2045FF2C91DC6D00D22B1B /* ScheduleActivityView.swift */,
-				0C80B5252C907BC100AB720B /* FreeTimeScheduleView.swift */,
-				0C2046052C9211C000D22B1B /* AddFreeTimeView.swift */,
-			);
-			path = Schedule;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -544,7 +540,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1540;
-				LastUpgradeCheck = 1540;
+				LastUpgradeCheck = 1600;
 				TargetAttributes = {
 					0C425A842C88F05800B7D9AB = {
 						CreatedOnToolsVersion = 15.4;
@@ -689,16 +685,20 @@
 				0C425A8B2C88F05800B7D9AB /* ContentView.swift in Sources */,
 				0C80B5302C910E7700AB720B /* UserAvailability.swift in Sources */,
 				0C3C95B82C9CBC2600BE5286 /* UserActivityPreferenceParticipant.swift in Sources */,
+				0C128B0A2CA1DF89004AA0D5 /* ParticipantsPreview.swift in Sources */,
+				0C128B0B2CA1DF89004AA0D5 /* ParticipantsView.swift in Sources */,
 				0C425AC62C88F14000B7D9AB /* ActivityCard.swift in Sources */,
 				0C425AC12C88F14000B7D9AB /* Activity.swift in Sources */,
 				0C2046062C9211C000D22B1B /* AddFreeTimeView.swift in Sources */,
 				0C425AC22C88F14000B7D9AB /* User.swift in Sources */,
 				0C3C95B62C9CBBEF00BE5286 /* UserActivityPreference.swift in Sources */,
+				0C128B0D2CA1EE48004AA0D5 /* Invite.swift in Sources */,
+				0C128B072CA1DB1D004AA0D5 /* InviteCard.swift in Sources */,
 				0C425AC42C88F14000B7D9AB /* Constants.swift in Sources */,
-				0C80B5262C907BC100AB720B /* FreeTimeScheduleView.swift in Sources */,
+				0C80B5262C907BC100AB720B /* CalendarView.swift in Sources */,
 				0C2045FE2C911D8D00D22B1B /* Functions.swift in Sources */,
 				0C425ACA2C893F3100B7D9AB /* ScheduledActivity.swift in Sources */,
-				0C80B52D2C90D9A400AB720B /* ProfilePictureView.swift in Sources */,
+				0C80B52D2C90D9A400AB720B /* ProfilePicture.swift in Sources */,
 				0C2046002C91DC6E00D22B1B /* ScheduleActivityView.swift in Sources */,
 				0C425AC32C88F14000B7D9AB /* APIService.swift in Sources */,
 				0C425A892C88F05800B7D9AB /* FriendSocial_IOSApp.swift in Sources */,
@@ -865,6 +865,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"FriendSocial-IOS/Preview Content\"";
@@ -882,8 +883,9 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.mzinck.FriendSocial-IOS";
+				PRODUCT_BUNDLE_IDENTIFIER = com.mzinck.friendsocial;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -895,6 +897,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"FriendSocial-IOS/Preview Content\"";
@@ -912,8 +915,9 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.mzinck.FriendSocial-IOS";
+				PRODUCT_BUNDLE_IDENTIFIER = com.mzinck.friendsocial;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -923,7 +927,6 @@
 		0C425AAD2C88F05800B7D9AB /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -943,7 +946,6 @@
 		0C425AAE2C88F05800B7D9AB /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -963,7 +965,6 @@
 		0C425AB02C88F05800B7D9AB /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 987R9VSE9J;
@@ -981,7 +982,6 @@
 		0C425AB12C88F05800B7D9AB /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 987R9VSE9J;

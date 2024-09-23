@@ -18,7 +18,6 @@ struct FriendSocialApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .environmentObject(DataManager.shared)
                 .font(.poppins(16)) // Set default font size to 16
         }
     }

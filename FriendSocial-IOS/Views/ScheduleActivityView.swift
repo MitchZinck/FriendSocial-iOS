@@ -21,6 +21,8 @@ struct ScheduleActivityView: View {
     @State private var showFriendPicker = false
     @State private var isRepeatDisabled: Bool = false
     @State private var isLoading: Bool = false
+    @State private var isDatePickerHighlighted: Bool = false
+    @State private var selectedEventId: Int?
 
     let daysOfWeek: [String] = ["S", "M", "T", "W", "T", "F", "S"]
 
@@ -84,13 +86,21 @@ struct ScheduleActivityView: View {
         HStack(alignment: .top, spacing: 15) {
             EmojiPicker(selectedEmoji: $selectedEmoji)
                 .frame(width: 60, height: 60)
-    
+
             VStack(alignment: .leading, spacing: 5) {
                 Text("Title")
                     .font(.custom(FontNames.poppinsRegular, size: 14))
                     .foregroundColor(.black)
                 HStack {
                     TextField("Add yours or select one", text: $title)
+                        .frame(height: 40)
+                        .padding(.horizontal, 8)
+                        .background(isTitleHighlighted ? Color.red.opacity(0.1) : Color.white)
+                        .cornerRadius(8)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(isTitleHighlighted ? Color.red : Color.clear, lineWidth: 1)
+                        )
                     Menu {
                         ForEach(viewModel.activities) { activity in
                             Button(action: {
@@ -109,12 +119,6 @@ struct ScheduleActivityView: View {
                             .foregroundColor(.gray)
                     }
                 }
-                .frame(height: 40)
-                .padding(.horizontal, 8)
-                .font(.custom(FontNames.poppinsRegular, size: 14))
-                .foregroundColor(.gray)
-                .background(Color.white)
-                .cornerRadius(8)
             }
         }
     }
@@ -151,23 +155,19 @@ struct ScheduleActivityView: View {
             Text("Participants")
                 .font(.custom(FontNames.poppinsRegular, size: 14))
                 .foregroundColor(.black)
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack {
-                    ForEach(selectedParticipants) { participant in
-                        ParticipantView(user: participant) {
-                            if let index = selectedParticipants.firstIndex(where: { $0.id == participant.id }) {
-                                selectedParticipants.remove(at: index)
-                            }
-                        }
-                    }
-                    Button(action: {
-                        showFriendPicker = true
-                    }) {
-                        Image(systemName: "person.badge.plus")
-                            .resizable()
-                            .frame(width: 40, height: 40)
-                            .foregroundColor(.black)
-                    }
+            HStack {
+                ParticipantsPreview(
+                    participants: selectedParticipants.map { ActivityParticipant(id: $0.id, userID: $0.id, scheduledActivityID: 0, inviteStatus: "accepted") },
+                    participantUsers: Dictionary(uniqueKeysWithValues: selectedParticipants.map { ($0.id, $0) }),
+                    selectedEventId: $selectedEventId, participantPPSize: 30
+                )
+                Button(action: {
+                    showFriendPicker = true
+                }) {
+                    Image(systemName: "person.badge.plus")
+                        .resizable()
+                        .frame(width: 30, height: 30)
+                        .foregroundColor(.black)
                 }
             }
         }
@@ -189,12 +189,13 @@ struct ScheduleActivityView: View {
                 .font(.custom(FontNames.poppinsRegular, size: 14))
                 .foregroundColor(.black)
             
-            CustomMultiDatePicker(selectedDates: $selectedDates, bounds: bounds)
+            CustomMultiDatePicker(selectedDates: $selectedDates, bounds: bounds, isHighlighted: $isDatePickerHighlighted)
                 .onChange(of: selectedDates) { oldValue, newValue in
                     isRepeatDisabled = newValue.count > 1
                     if isRepeatDisabled {
                         isRepeating = false
                     }
+                    isDatePickerHighlighted = false
                 }
             
             HStack(spacing: 15) {
@@ -290,19 +291,24 @@ struct ScheduleActivityView: View {
                 .foregroundColor(.black)
             TextField("", text: $locationName)
                 .padding(10)
-                .background(Color.white)
+                .background(isLocationNameHighlighted ? Color.red.opacity(0.1) : Color.white)
                 .cornerRadius(8)
-                .font(.custom(FontNames.poppinsRegular, size: 14))
-                .foregroundColor(.gray)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(isLocationNameHighlighted ? Color.red : Color.clear, lineWidth: 1)
+                )
+            
             Text("Location Address")
                 .font(.custom(FontNames.poppinsRegular, size: 14))
                 .foregroundColor(.black)
             TextField("", text: $locationAddress)
                 .padding(10)
-                .background(Color.white)
+                .background(isLocationAddressHighlighted ? Color.red.opacity(0.1) : Color.white)
                 .cornerRadius(8)
-                .font(.custom(FontNames.poppinsRegular, size: 14))
-                .foregroundColor(.gray)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(isLocationAddressHighlighted ? Color.red : Color.clear, lineWidth: 1)
+                )
         }
     }
 
@@ -325,29 +331,65 @@ struct ScheduleActivityView: View {
         endTime = noon.addingTimeInterval(estimatedTimeInterval)
     }
 
+    @State private var isTitleHighlighted: Bool = false
+    @State private var isLocationNameHighlighted: Bool = false
+    @State private var isLocationAddressHighlighted: Bool = false
+
     private func saveActivity() {
+        var hasError = false
+
+        // Check for empty fields
+        if title.isEmpty {
+            isTitleHighlighted = true
+            hasError = true
+        } else {
+            isTitleHighlighted = false
+        }
+
+        if locationName.isEmpty {
+            isLocationNameHighlighted = true
+            hasError = true
+        } else {
+            isLocationNameHighlighted = false
+        }
+
+        if locationAddress.isEmpty {
+            isLocationAddressHighlighted = true
+            hasError = true
+        } else {
+            isLocationAddressHighlighted = false
+        }
+
+        // Check for selected dates
+        if selectedDates.isEmpty {
+            isDatePickerHighlighted = true
+            hasError = true
+        } else {
+            isDatePickerHighlighted = false
+        }
+
+        // If any field is invalid, do not proceed
+        if hasError {
+            return
+        }
+
+        // Continue with saving the activity
         isLoading = true
         let newLocation = Location(id: 0, name: locationName, address: locationAddress, latitude: 82.645872, longitude: -38.749455)
         let newActivity = Activity(id: 0, name: title, description: description, estimatedTime: formatTimeInterval(from: startTime, to: endTime), locationID: nil, userCreated: true, emoji: selectedEmoji)
-        
+
         Task {
             do {
                 try await dataManager.saveNewScheduledActivity(location: newLocation, activity: newActivity, selectedDates: Array(selectedDates), startTime: startTime, endTime: endTime, participants: selectedParticipants, isRepeating: isRepeating, repeatFrequency: repeatFrequency, repeatUnit: repeatUnit, selectedDays: Array(selectedDays))
-                
-                // Reload data in DataManager
-                dataManager.loadInitialData(for: dataManager.currentUser?.id ?? 0)
-                
-                // Update UI on the main thread
+
                 DispatchQueue.main.async {
                     isLoading = false
                     dismiss()
                 }
             } catch {
                 print("Error saving activity: \(error)")
-                // Update UI on the main thread
                 DispatchQueue.main.async {
                     isLoading = false
-                    // Show an alert to the user
                 }
             }
         }
@@ -365,6 +407,7 @@ struct ScheduleActivityView: View {
 struct CustomMultiDatePicker: View {
     @Binding var selectedDates: Set<DateComponents>
     let bounds: Range<Date>
+    @Binding var isHighlighted: Bool
     @State private var isExpanded: Bool = false
     
     var body: some View {
@@ -389,8 +432,12 @@ struct CustomMultiDatePicker: View {
                 }
                 .padding(.horizontal, 10)
                 .padding(.vertical, 10)
-                .background(Color.white)
+                .background(isHighlighted ? Color.red.opacity(0.1) : Color.white)
                 .cornerRadius(10)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(isHighlighted ? Color.red : Color.clear, lineWidth: 1)
+                )
             }
             
             if isExpanded {
@@ -480,15 +527,13 @@ class AddScheduledActivityViewModel: ObservableObject {
     private func fetchLocations() {
         let locationIDs: Set<Int> = Set(activities.map { $0.locationID ?? 0 })
         Task {
-            for id in locationIDs {
-                do {
-                    let location = try await apiService.fetchLocation(id: id)
-                    await MainActor.run {
-                        self.locations.append(location)
-                    }
-                } catch {
-                    print("Error fetching location \(id): \(error)")
+            do{
+                let fetchedLocations = try await apiService.fetchLocations(ids: Array(locationIDs))
+                await MainActor.run {
+                    self.locations = fetchedLocations
                 }
+            } catch {
+                print("Error fetching locations: \(error)") 
             }
         }
     }
@@ -508,38 +553,6 @@ class AddScheduledActivityViewModel: ObservableObject {
     func saveNewActivity(location: Location, activity: Activity, selectedDates: [DateComponents], startTime: Date, endTime: Date, participants: [User], isRepeating: Bool, repeatFrequency: Int, repeatUnit: String, selectedDays: [Int]) async throws {
         let dataManager = DataManager.shared
         try await dataManager.saveNewScheduledActivity(location: location, activity: activity, selectedDates: selectedDates, startTime: startTime, endTime: endTime, participants: participants, isRepeating: isRepeating, repeatFrequency: repeatFrequency, repeatUnit: repeatUnit, selectedDays: selectedDays)
-    }
-}
-
-private struct ParticipantView: View {
-    @EnvironmentObject var dataManager: DataManager
-    let user: User
-    let onRemove: () -> Void
-
-    var body: some View {
-        VStack {
-            ZStack(alignment: .topTrailing) {
-                Image(user.profilePicture ?? "")
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: 40, height: 40)
-                    .clipShape(Circle())
-                
-                if user.id != dataManager.currentUser?.id {
-                    Button(action: onRemove) {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundColor(.red)
-                            .background(Color.white)
-                            .clipShape(Circle())
-                    }
-                    .offset(x: 5, y: -5)
-                }
-            }
-            .padding(.top, 5)
-            Text(user.name.prefix(10))
-                .font(.custom(FontNames.poppinsRegular, size: 12))
-                .lineLimit(1)
-        }
     }
 }
 

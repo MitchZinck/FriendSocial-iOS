@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct FreeTimeScheduleView: View {
+struct CalendarView: View {
     @Environment(\.presentationMode) var presentationMode: Binding<PresentationMode>
     @EnvironmentObject var dataManager: DataManager
     @State private var selectedDate: Date = Date()
@@ -9,7 +9,7 @@ struct FreeTimeScheduleView: View {
     @State private var isProfileMenuOpen: Bool = false
     @State private var events: [Event] = []
     @State private var selectedEventId: Int? = nil
-    @State private var isAddEventMenuPresented: Bool = false
+    @State private var showScheduleActivityView = false
     
     let filters: [String] = ["See all", "Social", "Personal"]
     
@@ -30,6 +30,9 @@ struct FreeTimeScheduleView: View {
         .navigationBarBackButtonHidden(true)
         .onAppear(perform: updateEvents)
         .onChange(of: selectedDate) { _, _ in updateEvents() }
+        .sheet(isPresented: $showScheduleActivityView) {
+            ScheduleActivityView()
+        }
         .sheet(item: Binding(
             get: { selectedEventId.map { IdentifiableInt(id: $0) } },
             set: { selectedEventId = $0?.id }
@@ -120,9 +123,9 @@ struct FreeTimeScheduleView: View {
         }
     }
     
-    private var eventListings: some View {
+   private var eventListings: some View {
         VStack(spacing: 15) {
-            ForEach(filteredEvents, id: \.time) { event in
+            ForEach(filteredEvents) { event in
                 EventCard(event: event, dataManager: dataManager, selectedEventId: $selectedEventId)
                 fullWidthDivider
             }
@@ -146,7 +149,7 @@ struct FreeTimeScheduleView: View {
                     let participants = dataManager.getActivityParticipants(for: scheduledActivityId)
                     return participants.count <= 1
                 }
-                return event.isAvailability
+                return event.isActive
             }
         default:
             return events
@@ -156,7 +159,7 @@ struct FreeTimeScheduleView: View {
     private var addEventButton: some View {
         HStack {
             Button(action: {
-                isAddEventMenuPresented = true
+                showScheduleActivityView = true
             }) {
                 Image(systemName: "plus")
                     .font(.title2)
@@ -176,24 +179,6 @@ struct FreeTimeScheduleView: View {
         .padding()
         .background(Color.gray.opacity(0.1))
         .cornerRadius(10)
-        .confirmationDialog("Add to Schedule", isPresented: $isAddEventMenuPresented) {
-            Button("Add Free Time") {
-                presentView(ScheduleActivityView())
-            }
-            Button("Schedule New Activity") {
-                presentView(ScheduleActivityView())
-            }
-        }
-    }
-
-    // Add this function to handle view presentation
-    private func presentView<Content: View>(_ view: Content) {
-        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-           let window = windowScene.windows.first,
-           let rootViewController = window.rootViewController {
-            let hostingController = UIHostingController(rootView: view)
-            rootViewController.present(hostingController, animated: true, completion: nil)
-        }
     }
 
     private var fullWidthDivider: some View {
@@ -206,8 +191,10 @@ struct FreeTimeScheduleView: View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Incoming Invites")
                 .font(.custom(FontNames.poppinsMedium, size: 18))
-            InviteCard(event: "Brunch", time: "Sun, 11:00 AM")
-            InviteCard(event: "Hike w John", time: "Sat, 9:00 AM")
+            let invitesForToday = dataManager.retrieveInvitesForDate(date: selectedDate)
+            ForEach(invitesForToday) { invite in
+                InviteCard(invite: invite)
+            }
         }
     }
     
@@ -228,9 +215,16 @@ struct FreeTimeScheduleView: View {
                   title: "⏳ Free time",
                   color: .blue,
                   icon: "person.2.fill",
-                  isAvailability: true,
+                  isActive: true,
                   scheduledActivityId: nil)
-        } + activitiesForDay.map { scheduledActivity in
+        } + activitiesForDay.compactMap { scheduledActivity in
+            // Only include activities where the current user's invite is accepted
+            let participants = dataManager.getActivityParticipants(for: scheduledActivity.id)
+            guard let currentUserParticipant = participants.first(where: { $0.userID == dataManager.currentUser?.id }),
+                  currentUserParticipant.inviteStatus == "Accepted" else {
+                return nil
+            }
+            
             let activity = dataManager.activities.first(where: { $0.id == scheduledActivity.activityID })
             let activityName = activity?.name ?? "Unknown Activity"
             let emoji = unicodeToEmoji(activity?.emoji ?? "") ?? ""
@@ -240,7 +234,7 @@ struct FreeTimeScheduleView: View {
                          title: title.count > 25 ? title.prefix(22) + "..." : title,
                          color: .green,
                          icon: "person.2.fill",
-                         isAvailability: false,
+                         isActive: false,
                          scheduledActivityId: scheduledActivity.id)
         }
         
@@ -412,7 +406,7 @@ struct EventCard: View {
                         
                         let participants = dataManager.getActivityParticipants(for: id)
                         HStack {
-                            ParticipantsPreview(participants: participants, participantUsers: dataManager.participantUsers, selectedEventId: $selectedEventId)
+                            ParticipantsPreview(participants: participants, participantUsers: dataManager.participantUsers, selectedEventId: $selectedEventId, participantPPSize: 30)
                             Spacer()
                             Button(action: {
                                 // Edit action
@@ -455,217 +449,29 @@ struct EventCard: View {
     }
 }
 
-struct ParticipantsPreview: View {
-    let participants: [ActivityParticipant]
-    let participantUsers: [Int: User]
-    @Binding var selectedEventId: Int?
-    
-    var body: some View {
-        HStack(spacing: 5) {
-            ForEach(participants.prefix(3).indices, id: \.self) { index in
-                if let user = participantUsers[participants[index].userID] {
-                    ZStack(alignment: .topTrailing) {
-                        Image(user.profilePicture ?? "default_profile")
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: 30, height: 30)
-                            .clipShape(Circle())
-                            .overlay(
-                                Circle()
-                                    .stroke(statusColor(for: participants[index].inviteStatus), lineWidth: 2)
-                            )
-                        
-                        statusIcon(for: participants[index].inviteStatus)
-                            .offset(x: 2, y: -2)
-                    }
-                }
-            }
-            if participants.count > 3 {
-                Text("+\(participants.count - 3)")
-                    .font(.custom(FontNames.poppinsRegular, size: 12))
-                    .foregroundColor(.gray)
-                    .frame(width: 30, height: 30)
-                    .background(Color.gray.opacity(0.2))
-                    .clipShape(Circle())
-            }
-        }
-        .onTapGesture {
-            if participants.count > 3 {
-                selectedEventId = participants.first?.scheduledActivityID
-            }
-        }
-    }
-    
-    private func statusColor(for status: String) -> Color {
-        switch status.lowercased() {
-        case "accepted":
-            return .green
-        case "pending":
-            return .yellow
-        case "rejected":
-            return .red
-        default:
-            return .clear
-        }
-    }
-    
-    private func statusIcon(for status: String) -> some View {
-        ZStack {
-            Circle()
-                .fill(Color.white)
-                .frame(width: 12, height: 12)
-            
-            Image(systemName: statusImageName(for: status))
-                .resizable()
-                .scaledToFit()
-                .frame(width: 8, height: 8)
-                .foregroundColor(statusColor(for: status))
-        }
-    }
-    
-    private func statusImageName(for status: String) -> String {
-        switch status.lowercased() {
-        case "accepted":
-            return "checkmark"
-        case "pending":
-            return "questionmark"
-        case "rejected":
-            return "xmark"
-        default:
-            return ""
-        }
-    }
-}
-
-private struct ParticipantsView: View {
-    let participants: [ActivityParticipant]
-    let participantUsers: [Int: User]
-    @Environment(\.presentationMode) var presentationMode
-    
-    var body: some View {
-        NavigationView {
-            List {
-                ForEach(participants, id: \.id) { participant in
-                    if let user = participantUsers[participant.userID] {
-                        HStack {
-                            ZStack(alignment: .topTrailing) {
-                                Image(user.profilePicture ?? "default_profile")
-                                    .resizable()
-                                    .scaledToFill()
-                                    .frame(width: 50, height: 50)
-                                    .clipShape(Circle())
-                                    .overlay(
-                                        Circle()
-                                            .stroke(statusColor(for: participant.inviteStatus), lineWidth: 2)
-                                    )
-                                
-                                statusIcon(for: participant.inviteStatus)
-                                    .offset(x: 3, y: -3)
-                            }
-                            Text(user.name)
-                                .font(.custom(FontNames.poppinsRegular, size: 16))
-                        }
-                    }
-                }
-            }
-            .navigationTitle("Participants")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button(action: {
-                        presentationMode.wrappedValue.dismiss()
-                    }) {
-                        Image(systemName: "xmark")
-                    }
-                }
-            }
-        }
-    }
-    
-    private func statusColor(for status: String) -> Color {
-        switch status.lowercased() {
-        case "accepted":
-            return .green
-        case "pending":
-            return .yellow
-        case "rejected":
-            return .red
-        default:
-            return .clear
-        }
-    }
-    
-    private func statusIcon(for status: String) -> some View {
-        ZStack {
-            Circle()
-                .fill(Color.white)
-                .frame(width: 16, height: 16)
-            
-            Image(systemName: statusImageName(for: status))
-                .resizable()
-                .scaledToFit()
-                .frame(width: 12, height: 12)
-                .foregroundColor(statusColor(for: status))
-        }
-    }
-    
-    private func statusImageName(for status: String) -> String {
-        switch status.lowercased() {
-        case "accepted":
-            return "checkmark"
-        case "pending":
-            return "questionmark"
-        case "rejected":
-            return "xmark"
-        default:
-            return ""
-        }
-    }
-}
-
-struct InviteCard: View {
-    let event: String
-    let time: String
-    
-    var body: some View {
-        HStack {
-            VStack(alignment: .leading) {
-                Text(event)
-                    .font(.custom(FontNames.poppinsMedium, size: 16))
-                Text(time)
-                    .font(.custom(FontNames.poppinsRegular, size: 14))
-                    .foregroundColor(.gray)
-            }
-            Spacer()
-            HStack {
-                Button(action: {}) {
-                    Image(systemName: "checkmark")
-                        .foregroundColor(.green)
-                }
-                Button(action: {}) {
-                    Image(systemName: "xmark")
-                        .foregroundColor(.red)
-                }
-            }
-        }
-        .padding()
-        .background(Color.gray.opacity(0.1))
-        .cornerRadius(10)
-    }
-}
-
-struct Event {
+struct Event: Identifiable {
+    let id: UUID
     let time: String
     let title: String
     let color: Color
     let icon: String
-    let isAvailability: Bool
+    let isActive: Bool
     let scheduledActivityId: Int?
     
     var startTime: Date {
-        let formatter: DateFormatter = DateFormatter()
+        let formatter = DateFormatter()
         formatter.dateFormat = "h:mm a"
         return formatter.date(from: time.components(separatedBy: " - ")[0]) ?? Date()
+    }
+    
+    init(time: String, title: String, color: Color, icon: String, isActive: Bool, scheduledActivityId: Int?) {
+        self.id = UUID()
+        self.time = time
+        self.title = title
+        self.color = color
+        self.icon = icon
+        self.isActive = isActive
+        self.scheduledActivityId = scheduledActivityId
     }
 }
 
@@ -675,7 +481,7 @@ struct IdentifiableInt: Identifiable {
 
 struct FreeTimeScheduleView_Previews: PreviewProvider {
     static var previews: some View {
-        FreeTimeScheduleView()
+        CalendarView()
             .environmentObject(DataManager.shared)
     }
 }

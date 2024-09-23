@@ -14,6 +14,7 @@ class DataManager: ObservableObject {
     @Published var participantUsers: [Int: User] = [:]
     @Published var userAvailability: [UserAvailability] = []
     @Published var userActivityPreferences: [UserActivityPreference] = []
+    @Published var invites: [Invite] = []
     
     private let apiService: APIService
     private var userCache: [Int: (user: User, timestamp: Date)] = [:]
@@ -38,7 +39,10 @@ class DataManager: ObservableObject {
                     group.addTask { await self.loadScheduledActivities(for: userId) }
                     group.addTask { await self.loadUserAvailability(for: userId) }
                 }
-                
+
+                // Process invites
+                await processInvites()
+
                 await MainActor.run {
                     self.isLoading = false
                     print("Initial data loading completed")
@@ -51,7 +55,61 @@ class DataManager: ObservableObject {
             }
         }
     }
+
+    private func processInvites() async {
+        let newInvites = await withTaskGroup(of: Invite?.self) { group in
+            for (scheduledActivityId, participants) in activityParticipants {
+                group.addTask {
+                    await self.processInvite(scheduledActivityId: scheduledActivityId, participants: participants)
+                }
+            }
+            
+            var invites: [Invite] = []
+            for await invite in group {
+                if let invite = invite {
+                    invites.append(invite)
+                }
+            }
+            return invites
+        }
+
+        await MainActor.run {
+            self.invites = newInvites
+        }
+    }
+
+    private func processInvite(scheduledActivityId: Int, participants: [ActivityParticipant]) async -> Invite? {
+        guard let invitedScheduledActivity = scheduledActivities.first(where: { $0.id == scheduledActivityId }),
+              let invitedActivity = activities.first(where: { $0.id == invitedScheduledActivity.activityID }),
+              let location = locations.first(where: { $0.id == invitedActivity.locationID }) else {
+            return nil
+        }
+        
+        let pendingParticipants = participants.filter { $0.inviteStatus == "Pending" }
+        
+        guard !pendingParticipants.isEmpty else {
+            return nil
+        }
+        
+        let invitedParticipants = getActivityParticipants(for: scheduledActivityId)
+        let invitedParticipantUsers = Dictionary(uniqueKeysWithValues: invitedParticipants.compactMap { participant in
+            if let user = participantUsers[participant.userID] {
+                return (participant.userID, user)
+            }
+            return nil
+        })
     
+        return Invite(id: invitedScheduledActivity.id,
+            event: invitedActivity.name, 
+            emoji: invitedActivity.emoji,
+            scheduledAt: invitedScheduledActivity.scheduledAt, 
+            estimatedTime: invitedActivity.estimatedTime, 
+            participants: invitedParticipants, 
+            participantUsers: invitedParticipantUsers, 
+            description: invitedActivity.description, 
+            locationName: location.name)
+    }
+
     private func loadUser(id: Int) async throws -> User {
         return try await fetchUser(id: id)
     }
@@ -61,18 +119,8 @@ class DataManager: ObservableObject {
             let friendsList = try await apiService.fetchFriends(userId: userId)
             let uniqueFriendIds = Set(friendsList.map { $0.userID == userId ? $0.friendID : $0.userID })
             
-            let fetchedFriends: [User] = try await withThrowingTaskGroup(of: User.self) { group in
-                for friendId in uniqueFriendIds {
-                    group.addTask {
-                        return try await self.fetchUser(id: friendId)
-                    }
-                }
-                var users: [User] = []
-                for try await user in group {
-                    users.append(user)
-                }
-                return users
-            }
+            let fetchedFriends: [User] = try await apiService.fetchUsers(ids: Array(uniqueFriendIds))
+
             await MainActor.run {
                 self.friends = fetchedFriends
             }
@@ -103,42 +151,21 @@ class DataManager: ObservableObject {
 
     
     private func fetchScheduledActivities(ids: [Int]) async throws -> [ScheduledActivity] {
-        return try await withThrowingTaskGroup(of: ScheduledActivity.self) { group in
-            for id in ids {
-                group.addTask {
-                    return try await self.apiService.fetchScheduledActivity(scheduledActivityID: id)
-                }
-            }
-            var fetchedActivities: [ScheduledActivity] = []
-            for try await activity in group {
-                fetchedActivities.append(activity)
-            }
-            return fetchedActivities
-        }
+        return try await apiService.fetchScheduledActivities(ids: ids)
     }
 
     private func loadActivitiesAndLocations() async {
         do {
-            let results = try await withThrowingTaskGroup(of: (Activity, Location?).self) { group in
-                for scheduledActivity in scheduledActivities {
-                    group.addTask {
-                        let activity = try await self.apiService.fetchActivity(id: scheduledActivity.activityID)
-                        var location: Location? = nil
-                        if let locationID = activity.locationID {
-                            location = try await self.apiService.fetchLocation(id: locationID)
-                        }
-                        return (activity, location)
-                    }
-                }
-                var results: [(Activity, Location?)] = []
-                for try await result in group {
-                    results.append(result)
-                }
-                return results
-            }
+            let activityIDs = scheduledActivities.map { $0.activityID }
+            let activities = try await self.apiService.fetchActivities(ids: activityIDs)
             
-            let fetchedActivities = results.map { $0.0 }
-            let fetchedLocations = results.compactMap { $0.1 }
+            let locationIDs = Set(activities.compactMap { $0.locationID })
+            let locations = try await self.apiService.fetchLocations(ids: Array(locationIDs))
+            
+            let locationDict = Dictionary(uniqueKeysWithValues: locations.map { ($0.id, $0) })
+            
+            let fetchedActivities = activities
+            let fetchedLocations = Array(locationDict.values)
             
             await MainActor.run {
                 self.activities = fetchedActivities
@@ -151,21 +178,10 @@ class DataManager: ObservableObject {
         
     private func loadActivityParticipants() async {
         do {
-            let results = try await withThrowingTaskGroup(of: (Int, [ActivityParticipant]).self) { group in
-                for scheduledActivity in scheduledActivities {
-                    group.addTask {
-                        let participants = try await self.apiService.fetchActivityParticipantsByScheduledActivityID(scheduledActivityID: scheduledActivity.id)
-                        return (scheduledActivity.id, participants)
-                    }
-                }
-                var participantsDict: [Int: [ActivityParticipant]] = [:]
-                for try await (scheduledActivityId, participants) in group {
-                    participantsDict[scheduledActivityId] = participants
-                }
-                return participantsDict
-            }
+            let scheduledActivityIds = scheduledActivities.map { $0.id }
+            let participants = try await apiService.fetchActivityParticipantsByScheduledActivityID(scheduledActivityID: scheduledActivityIds)
             await MainActor.run {
-                self.activityParticipants = results
+                self.activityParticipants = Dictionary(grouping: participants, by: { $0.scheduledActivityID })
             }
         } catch {
             print("Error loading activity participants: \(error)")
@@ -175,21 +191,9 @@ class DataManager: ObservableObject {
     private func fetchParticipantUsers() async {
         let allParticipantUserIds: Set<Int> = Set(activityParticipants.values.flatMap { $0 }.map { $0.userID })
         do {
-            let fetchedUsers = try await withThrowingTaskGroup(of: (Int, User).self) { group in
-                for userId in allParticipantUserIds {
-                    group.addTask {
-                        let user = try await self.fetchUser(id: userId)
-                        return (userId, user)
-                    }
-                }
-                var usersDict: [Int: User] = [:]
-                for try await (userId, user) in group {
-                    usersDict[userId] = user
-                }
-                return usersDict
-            }
+            let fetchedUsers = try await apiService.fetchUsers(ids: Array(allParticipantUserIds))
             await MainActor.run {
-                self.participantUsers = fetchedUsers
+                self.participantUsers = Dictionary(uniqueKeysWithValues: fetchedUsers.map { ($0.id, $0) })
             }
         } catch {
             print("Error fetching participant users: \(error)")
@@ -207,9 +211,9 @@ class DataManager: ObservableObject {
             return cachedData.user
         }
         
-        let user = try await apiService.fetchUser(id: id)
-        userCache[id] = (user: user, timestamp: currentTime)
-        return user
+        let user = try await apiService.fetchUsers(ids: [id])
+        userCache[id] = (user: user[0], timestamp: currentTime)
+        return user[0]
     }
     
     private func loadUserAvailability(for userId: Int) async {
@@ -254,7 +258,6 @@ class DataManager: ObservableObject {
         
         // Create and post activity participants
         try await createActivityParticipants(scheduledActivities: scheduledActivities, participants: participants)
-
         if isRepeating {
             // Create and save user activity preference
             let preference = UserActivityPreference(
@@ -282,7 +285,8 @@ class DataManager: ObservableObject {
     }
 
     private func createRepeatScheduledActivities(userPreferenceId: Int, startTime: Date, timeZone: TimeZone) async throws -> [ScheduledActivity] {
-        let repeatScheduledActivitiesRequest = try await apiService.postCreateRepeatScheduledActivity(userPreferenceId, startTime, timeZone)
+        let userPreferenceIdString = String(userPreferenceId)
+        let repeatScheduledActivitiesRequest = try await apiService.postCreateRepeatScheduledActivity(userPreferenceIdString, startTime, timeZone)
         repeatScheduledActivitiesRequest.forEach { scheduledActivity in
             DispatchQueue.main.async {
                 self.addScheduledActivity(scheduledActivity)
@@ -300,7 +304,8 @@ class DataManager: ObservableObject {
     private func createActivityParticipants(scheduledActivities: [ScheduledActivity], participants: [User]) async throws {
         for scheduledActivity in scheduledActivities {
             for participant in participants {
-                let activityParticipant = ActivityParticipant(id: 0, userID: participant.id, scheduledActivityID: scheduledActivity.id, inviteStatus: "Pending")
+                let inviteStatus = participant.id == currentUser?.id ? "Accepted" : "Pending"
+                let activityParticipant = ActivityParticipant(id: 0, userID: participant.id, scheduledActivityID: scheduledActivity.id, inviteStatus: inviteStatus)
                 let savedActivityParticipant = try await apiService.postActivityParticipant(activityParticipant)
                 await MainActor.run {
                     self.addActivityParticipant(savedActivityParticipant)
@@ -362,6 +367,57 @@ class DataManager: ObservableObject {
                 self.scheduledActivities[index] = savedActivity
                 self.scheduledActivities.sort { $0.scheduledAt < $1.scheduledAt }
             }
+        }
+    }
+
+    func retrieveInvitesForDate(date: Date) -> [Invite] {
+        let calendar = Calendar.current
+        return invites.filter { invite in
+            calendar.isDate(invite.scheduledAt, inSameDayAs: date)
+        }
+    }
+
+    func respondToInvite(invite: Invite, status: String) async {
+        guard let currentUser = currentUser else { return }
+        
+        do {
+            // Find the activity participant for the current user
+            if let participant = invite.participants.first(where: { $0.userID == currentUser.id }) {
+                // Update the activity participant
+                var updatedParticipant = participant
+                updatedParticipant.inviteStatus = status
+                
+                // Send the update to the server
+                let finalUpdatedParticipant = try await apiService.updateActivityParticipant(updatedParticipant)
+                
+                // Update local data
+                await MainActor.run {
+                    // Update activityParticipants
+                    if var participants = self.activityParticipants[invite.id] {
+                        if let index = participants.firstIndex(where: { $0.id == finalUpdatedParticipant.id }) {
+                            participants[index] = finalUpdatedParticipant
+                        }
+                        self.activityParticipants[invite.id] = participants
+                    }
+                    
+                    // Remove the invite from the list
+                    self.invites.removeAll { $0.id == invite.id }
+                    
+                    // If accepted, add to scheduledActivities if not already present
+                    if status == "Accepted" {
+                        if !self.scheduledActivities.contains(where: { $0.id == invite.id }) {
+                            if let scheduledActivity = self.scheduledActivities.first(where: { $0.id == invite.id }) {
+                                self.scheduledActivities.append(scheduledActivity)
+                                self.scheduledActivities.sort { $0.scheduledAt < $1.scheduledAt }
+                            }
+                        }
+                    }
+                }
+                
+                print("Invite response processed successfully")
+            }
+        } catch {
+            print("Error responding to invite: \(error)")
         }
     }
 }

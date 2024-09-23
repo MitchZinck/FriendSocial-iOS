@@ -4,7 +4,7 @@ struct ActivityParticipant: Codable {
     let id: Int
     let userID: Int
     let scheduledActivityID: Int
-    let inviteStatus: String
+    var inviteStatus: String
 
     enum CodingKeys: String, CodingKey {
         case id
