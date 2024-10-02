@@ -59,18 +59,14 @@ class DataManager: ObservableObject {
     private func processInvites() async {
         let newInvites = await withTaskGroup(of: Invite?.self) { group in
             for (scheduledActivityId, participants) in activityParticipants {
-                group.addTask {
-                    await self.processInvite(scheduledActivityId: scheduledActivityId, participants: participants)
+                if participants.first(where: { $0.userID == currentUser?.id && $0.inviteStatus.lowercased() == "pending" }) != nil {
+                    group.addTask {
+                        await self.processInvite(scheduledActivityId: scheduledActivityId, participants: participants)
+                    }
                 }
             }
             
-            var invites: [Invite] = []
-            for await invite in group {
-                if let invite = invite {
-                    invites.append(invite)
-                }
-            }
-            return invites
+            return await group.compactMap { $0 }.reduce(into: []) { $0.append($1) }
         }
 
         await MainActor.run {
@@ -82,32 +78,27 @@ class DataManager: ObservableObject {
         guard let invitedScheduledActivity = scheduledActivities.first(where: { $0.id == scheduledActivityId }),
               let invitedActivity = activities.first(where: { $0.id == invitedScheduledActivity.activityID }),
               let location = locations.first(where: { $0.id == invitedActivity.locationID }) else {
+            print("Failed to process invite: missing activity or location data")
             return nil
         }
-        
-        let pendingParticipants = participants.filter { $0.inviteStatus == "Pending" }
-        
-        guard !pendingParticipants.isEmpty else {
-            return nil
-        }
-        
-        let invitedParticipants = getActivityParticipants(for: scheduledActivityId)
-        let invitedParticipantUsers = Dictionary(uniqueKeysWithValues: invitedParticipants.compactMap { participant in
+
+        let invitedParticipantUsers = participants.reduce(into: [Int: User]()) { result, participant in
             if let user = participantUsers[participant.userID] {
-                return (participant.userID, user)
+                result[participant.userID] = user
             }
-            return nil
-        })
+        }
     
-        return Invite(id: invitedScheduledActivity.id,
+        return Invite(
+            id: invitedScheduledActivity.id,
             event: invitedActivity.name, 
             emoji: invitedActivity.emoji,
             scheduledAt: invitedScheduledActivity.scheduledAt, 
             estimatedTime: invitedActivity.estimatedTime, 
-            participants: invitedParticipants, 
+            participants: participants, 
             participantUsers: invitedParticipantUsers, 
             description: invitedActivity.description, 
-            locationName: location.name)
+            locationName: location.name
+        )
     }
 
     private func loadUser(id: Int) async throws -> User {
@@ -383,9 +374,13 @@ class DataManager: ObservableObject {
         do {
             // Find the activity participant for the current user
             if let participant = invite.participants.first(where: { $0.userID == currentUser.id }) {
-                // Update the activity participant
-                var updatedParticipant = participant
-                updatedParticipant.inviteStatus = status
+                // Create a new immutable participant with updated inviteStatus
+                let updatedParticipant = ActivityParticipant(
+                    id: participant.id,
+                    userID: participant.userID,
+                    scheduledActivityID: participant.scheduledActivityID,
+                    inviteStatus: status
+                )
                 
                 // Send the update to the server
                 let finalUpdatedParticipant = try await apiService.updateActivityParticipant(updatedParticipant)

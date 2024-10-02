@@ -8,30 +8,32 @@ struct CalendarView: View {
     @State private var isCalendarDropdownVisible: Bool = false
     @State private var isProfileMenuOpen: Bool = false
     @State private var events: [Event] = []
+    @State private var invites: [Invite] = []
     @State private var selectedEventId: Int? = nil
-    @State private var showScheduleActivityView = false
+    @State private var showScheduleActivityView: Bool = false
     
     let filters: [String] = ["See all", "Social", "Personal"]
     
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 10) {
-                    calendarSection
-                    scheduleContent
-                }
-                .padding(.top, 10)
-            }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar { toolbarContent }
-            .toolbarBackground(.visible, for: .navigationBar)
-            .toolbarBackground(Color.gray.opacity(0.01), for: .navigationBar)
+            mainContent
         }
         .navigationBarBackButtonHidden(true)
         .onAppear(perform: updateEvents)
-        .onChange(of: selectedDate) { _, _ in updateEvents() }
-        .sheet(isPresented: $showScheduleActivityView) {
+        .onChange(of: selectedDate) { _, _ in
+            updateEvents()
+            updateInvites()
+        }
+        .onChange(of: dataManager.invites) { _, _ in
+            updateInvites()
+        }
+       .sheet(isPresented: $showScheduleActivityView) {
             ScheduleActivityView()
+                .environmentObject(dataManager)
+                .onDisappear {
+                    updateEvents()
+                    updateInvites()
+                }
         }
         .sheet(item: Binding(
             get: { selectedEventId.map { IdentifiableInt(id: $0) } },
@@ -39,6 +41,20 @@ struct CalendarView: View {
         )) { identifiableEventId in
             participantsSheet(for: identifiableEventId.id)
         }
+    }
+    
+    private var mainContent: some View {
+        ScrollView {
+            VStack(spacing: 10) {
+                calendarSection
+                scheduleContent
+            }
+            .padding(.top, 10)
+        }
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar { toolbarContent }
+        .toolbarBackground(.visible, for: .navigationBar)
+        .toolbarBackground(Color.gray.opacity(0.01), for: .navigationBar)
     }
     
     private var scheduleContent: some View {
@@ -76,12 +92,12 @@ struct CalendarView: View {
             .padding(.leading)
         }
     }
-    // Add this function to calculate the date for each index
+    
     private func getDateForIndex(_ index: Int) -> Date {
         let calendar: Calendar = Calendar.current
         let today: Date = Date()
         let weekday: Int = calendar.component(.weekday, from: today)
-        let daysToSubtract: Int = (weekday + 5) % 7 // Calculate days to subtract to get to Monday
+        let daysToSubtract: Int = (weekday + 5) % 7
         
         guard let monday: Date = calendar.date(byAdding: .day, value: -daysToSubtract, to: today) else {
             return today
@@ -123,7 +139,7 @@ struct CalendarView: View {
         }
     }
     
-   private var eventListings: some View {
+    private var eventListings: some View {
         VStack(spacing: 15) {
             ForEach(filteredEvents) { event in
                 EventCard(event: event, dataManager: dataManager, selectedEventId: $selectedEventId)
@@ -184,16 +200,25 @@ struct CalendarView: View {
     private var fullWidthDivider: some View {
         Divider()
             .background(Color.black)
-            .padding(.horizontal, -20) // Adjust this value as needed
+            .padding(.horizontal, -20)
+    }
+
+    private func updateInvites() {
+        invites = dataManager.retrieveInvitesForDate(date: selectedDate)
     }
     
     private var incomingInvites: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .center, spacing: 10) {
             Text("Incoming Invites")
                 .font(.custom(FontNames.poppinsMedium, size: 18))
-            let invitesForToday = dataManager.retrieveInvitesForDate(date: selectedDate)
-            ForEach(invitesForToday) { invite in
-                InviteCard(invite: invite)
+            if(invites.count > 0) {
+                ForEach(invites) { invite in
+                    InviteCard(invite: invite)
+                }
+            } else {
+                Text("No invites for today")
+                    .font(.custom(FontNames.poppinsRegular, size: 14))
+                    .foregroundColor(.gray)
             }
         }
     }
@@ -203,13 +228,10 @@ struct CalendarView: View {
         let weekday: Int = calendar.component(.weekday, from: selectedDate)
         let dayOfWeek: String = calendar.standaloneWeekdaySymbols[weekday - 1]
         
-        // Filter user availability for the selected day
         let availabilityForDay: [UserAvailability] = dataManager.userAvailability.filter { $0.dayOfWeek == dayOfWeek || $0.specificDate == selectedDate }
         
-        // Filter scheduled activities for the selected day
         let activitiesForDay: [ScheduledActivity] = dataManager.scheduledActivities.filter { calendar.isDate($0.scheduledAt, inSameDayAs: selectedDate) }
         
-        // Combine availability and scheduled activities into events
         events = availabilityForDay.map { availability in
             Event(time: "\(formatTime(availability.startTime)) - \(formatTime(availability.endTime))",
                   title: "⏳ Free time",
@@ -218,7 +240,6 @@ struct CalendarView: View {
                   isActive: true,
                   scheduledActivityId: nil)
         } + activitiesForDay.compactMap { scheduledActivity in
-            // Only include activities where the current user's invite is accepted
             let participants = dataManager.getActivityParticipants(for: scheduledActivity.id)
             guard let currentUserParticipant = participants.first(where: { $0.userID == dataManager.currentUser?.id }),
                   currentUserParticipant.inviteStatus == "Accepted" else {
@@ -230,15 +251,14 @@ struct CalendarView: View {
             let emoji = unicodeToEmoji(activity?.emoji ?? "") ?? ""
             let title = "\(emoji) \(activityName)"
             
-            return Event(time: "\(formatTime(scheduledActivity.scheduledAt)) - \(formatTime(scheduledActivity.scheduledAt.addingTimeInterval(3600)))", // Assuming 1 hour duration
-                         title: title.count > 25 ? title.prefix(22) + "..." : title,
+            return Event(time: "\(formatTime(scheduledActivity.scheduledAt)) - \(formatTime(scheduledActivity.scheduledAt.addingTimeInterval(3600)))",
+                         title: title.count > 25 ? String(title.prefix(22)) + "..." : title,
                          color: .green,
                          icon: "person.2.fill",
                          isActive: false,
                          scheduledActivityId: scheduledActivity.id)
         }
         
-        // Sort events by start time
         events.sort { $0.startTime < $1.startTime }
     }
 

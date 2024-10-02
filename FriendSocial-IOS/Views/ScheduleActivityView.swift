@@ -157,7 +157,7 @@ struct ScheduleActivityView: View {
                 .foregroundColor(.black)
             HStack {
                 ParticipantsPreview(
-                    participants: selectedParticipants.map { ActivityParticipant(id: $0.id, userID: $0.id, scheduledActivityID: 0, inviteStatus: "accepted") },
+                    participants: selectedParticipants.map { ActivityParticipant(id: $0.id, userID: $0.id, scheduledActivityID: 0, inviteStatus: $0.id == dataManager.currentUser?.id ? "Accepted" : "Pending") },
                     participantUsers: Dictionary(uniqueKeysWithValues: selectedParticipants.map { ($0.id, $0) }),
                     selectedEventId: $selectedEventId, participantPPSize: 30
                 )

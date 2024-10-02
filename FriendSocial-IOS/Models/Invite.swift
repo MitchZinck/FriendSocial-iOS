@@ -1,6 +1,6 @@
 import Foundation
 
-struct Invite: Identifiable {
+struct Invite: Identifiable, Equatable {
     let id: Int
     let event: String
     let emoji: String
